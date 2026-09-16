@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Chemical Management System</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+
+    <div class="logo">
+        <div class="logo-icon">🧪</div>
+        <div>
+            <h2>ChemManage</h2>
+            <span>Internal EHS System</span>
+        </div>
+    </div>
+
+    <nav>
+        <button class="nav-btn active" onclick="showPage('dashboard')">
+            🏠 Dashboard
+        </button>
+
+        <button class="nav-btn" onclick="showPage('inventory')">
+            🧪 Chemical Inventory
+        </button>
+
+        <button class="nav-btn" onclick="showPage('addChemical')">
+            ➕ Add Chemical
+        </button>
+
+        <button class="nav-btn" onclick="showPage('reports')">
+            📊 Reports
+        </button>
+    </nav>
+
+    <div class="sidebar-footer">
+        <small>Internal Factory Use</small>
+        <br>
+        <small>© 2026 EHS</small>
+    </div>
+
+</aside>
+
+
+<!-- MAIN -->
+<main class="main">
+
+    <!-- TOP BAR -->
+    <header class="topbar">
+
+        <div>
+            <h1 id="pageTitle">Dashboard</h1>
+            <p>Chemical Management System</p>
+        </div>
+
+        <div class="user-info">
+            👤 EHS Officer
+        </div>
+
+    </header>
+
+
+    <!-- DASHBOARD -->
+    <section id="dashboard" class="page active">
+
+        <div class="cards">
+
+            <div class="card">
+                <div class="card-icon blue">🧪</div>
+                <div>
+                    <span>Total Chemicals</span>
+                    <h2 id="totalChemicals">0</h2>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-icon green">📦</div>
+                <div>
+                    <span>In Stock</span>
+                    <h2 id="stockChemicals">0</h2>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-icon orange">⚠️</div>
+                <div>
+                    <span>Hazardous</span>
+                    <h2 id="hazardousChemicals">0</h2>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-icon red">📅</div>
+                <div>
+                    <span>Expiry / Review Due</span>
+                    <h2 id="expiryChemicals">0</h2>
+                </div>
+            </div>
+
+        </div>
+
+
+        <div class="dashboard-grid">
+
+            <div class="panel">
+
+                <div class="panel-header">
+                    <h2>Recent Chemicals</h2>
+
+                    <button onclick="showPage('inventory')" class="small-btn">
+                        View All
+                    </button>
+                </div>
+
+                <div class="table-container">
+
+                    <table>
+
+                        <thead>
+                            <tr>
+                                <th>Chemical ID</th>
+                                <th>Chemical Name</th>
+                                <th>Department</th>
+                                <th>Stock</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="recentTable">
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+
+            <div class="panel">
+
+                <div class="panel-header">
+                    <h2>Quick Actions</h2>
+                </div>
+
+                <div class="quick-actions">
+
+                    <button onclick="showPage('addChemical')">
+                        ➕ Add Chemical
+                    </button>
+
+                    <button onclick="showPage('inventory')">
+                        🔍 Search Inventory
+                    </button>
+
+                    <button onclick="exportCSV()">
+                        📥 Export Inventory
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- INVENTORY -->
+    <section id="inventory" class="page">
+
+        <div class="panel">
+
+            <div class="panel-header">
+
+                <h2>Chemical Inventory</h2>
+
+                <button onclick="exportCSV()" class="primary-btn">
+                    📥 Export CSV
+                </button>
+
+            </div>
+
+
+            <div class="filters">
+
+                <input
+                    type="text"
+                    id="searchChemical"
+                    placeholder="🔍 Search chemical..."
+                    onkeyup="renderInventory()"
+                >
+
+                <select id="departmentFilter" onchange="renderInventory()">
+                    <option value="">All Departments</option>
+                    <option>Washing</option>
+                    <option>Dyeing</option>
+                    <option>Printing</option>
+                    <option>Maintenance</option>
+                    <option>ETP</option>
+                    <option>Boiler</option>
+                    <option>Housekeeping</option>
+                </select>
+
+                <select id="hazardFilter" onchange="renderInventory()">
+                    <option value="">All Hazard Types</option>
+                    <option>Flammable</option>
+                    <option>Corrosive</option>
+                    <option>Toxic</option>
+                    <option>Irritant</option>
+                    <option>Oxidizing</option>
+                    <option>Non-Hazardous</option>
+                </select>
+
+            </div>
+
+
+            <div class="table-container">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+                            <th>ID</th>
+                            <th>Chemical Name</th>
+                            <th>CAS No.</th>
+                            <th>Department</th>
+                            <th>Hazard</th>
+                            <th>Stock</th>
+                            <th>Unit</th>
+                            <th>Storage</th>
+                            <th>Expiry</th>
+                            <th>Actions</th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="inventoryTable">
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- ADD CHEMICAL -->
+    <section id="addChemical" class="page">
+
+        <div class="panel">
+
+            <div class="panel-header">
+                <h2>Add New Chemical</h2>
+            </div>
+
+
+            <form id="chemicalForm">
+
+                <div class="form-grid">
+
+                    <div class="form-group">
+
+                        <label>Chemical Name *</label>
+
+                        <input
+                            type="text"
+                            id="chemicalName"
+                            required
+                            placeholder="Example: Sodium Hydroxide"
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>CAS Number</label>
+
+                        <input
+                            type="text"
+                            id="casNumber"
+                            placeholder="Example: 1310-73-2"
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>Supplier</label>
+
+                        <input
+                            type="text"
+                            id="supplier"
+                            placeholder="Supplier name"
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>Department *</label>
+
+                        <select id="department" required>
+
+                            <option value="">Select Department</option>
+
+                            <option>Washing</option>
+                            <option>Dyeing</option>
+                            <option>Printing</option>
+                            <option>Maintenance</option>
+                            <option>ETP</option>
+                            <option>Boiler</option>
+                            <option>Housekeeping</option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>Hazard Classification *</label>
+
+                        <select id="hazard" required>
+
+                            <option value="">Select Hazard</option>
+
+                            <option>Flammable</option>
+                            <option>Corrosive</option>
+                            <option>Toxic</option>
+                            <option>Irritant</option>
+                            <option>Oxidizing</option>
+                            <option>Non-Hazardous</option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>Current Stock</label>
+
+                        <input
+                            type="number"
+                            id="stock"
+                            min="0"
+                            step="0.01"
+                            value="0"
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>Unit</label>
+
+                        <select id="unit">
+
+                            <option>Kg</option>
+                            <option>Liter</option>
+                            <option>Ton</option>
+                            <option>Nos</option>
+                            <option>Drum</option>
+                            <option>Can</option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>Storage Location</label>
+
+                        <input
+                            type="text"
+                            id="storage"
+                            placeholder="Example: Chemical Store - Rack A1"
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>Purchase Date</label>
+
+                        <input
+                            type="date"
+                            id="purchaseDate"
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>Expiry / Review Date</label>
+
+                        <input
+                            type="date"
+                            id="expiryDate"
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>SDS Available?</label>
+
+                        <select id="sds">
+
+                            <option>Yes</option>
+                            <option>No</option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>GHS Label Available?</label>
+
+                        <select id="ghs">
+
+                            <option>Yes</option>
+                            <option>No</option>
+
+                        </select>
+
+                    </div>
+
+                </div>
+
+
+                <div class="form-group full">
+
+                    <label>Remarks</label>
+
+                    <textarea
+                        id="remarks"
+                        placeholder="Enter additional information..."
+                    ></textarea>
+
+                </div>
+
+
+                <div class="form-buttons">
+
+                    <button type="reset" class="secondary-btn">
+                        Clear
+                    </button>
+
+                    <button type="submit" class="primary-btn">
+                        💾 Save Chemical
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </section>
+
+
+    <!-- REPORTS -->
+    <section id="reports" class="page">
+
+        <div class="cards">
+
+            <div class="card">
+                <div class="card-icon blue">📄</div>
+                <div>
+                    <span>SDS Available</span>
+                    <h2 id="sdsAvailable">0</h2>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-icon red">❌</div>
+                <div>
+                    <span>SDS Missing</span>
+                    <h2 id="sdsMissing">0</h2>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-icon orange">🏷️</div>
+                <div>
+                    <span>GHS Missing</span>
+                    <h2 id="ghsMissing">0</h2>
+                </div>
+            </div>
+
+        </div>
+
+
+        <div class="panel">
+
+            <div class="panel-header">
+                <h2>Inventory Report</h2>
+
+                <button onclick="exportCSV()" class="primary-btn">
+                    📥 Download CSV
+                </button>
+
+            </div>
+
+            <p class="report-info">
+                Use the CSV export to maintain a backup of your chemical inventory
+                and prepare audit documentation.
+            </p>
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<script src="script.js"></script>
+
+</body>
+</html>
