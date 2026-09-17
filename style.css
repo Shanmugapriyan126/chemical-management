@@ -27,6 +27,16 @@ body {
     flex-direction: column;
 }
 
+.sidebar-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 50px;
+    object-fit: cover;
+    background: white;
+    pading: 2px;
+    border: 1px solid #e5e7eb;
+}
+
 .logo {
     width:40px;
     height:auto;
