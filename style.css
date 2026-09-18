@@ -25,36 +25,52 @@ body {
     padding: 20px;
     display: flex;
     flex-direction: column;
+    box-sizing: border-box;
 }
 
+
+
+/* ================================
+   RK-CMS BRAND / LOGO
+================================ */
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 25px;
+}
+
+/* Small round company logo */
 .sidebar-logo {
-    width: 40px;
-    height: 40px;
-    border-radius: 50px;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
     object-fit: cover;
-    background: white;
-    pading: 2px;
-    border: 1px solid #e5e7eb;
+    display: block;
+    flex-shrink: 0;
 }
 
-.logo {
-    width:40px;
-    height:auto;
-    border-radius: 6px;
+/* Text beside logo */
+.brand-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
-.logo-icon {
-    font-size: 30px;
+.brand-text h2 {
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.1;
+    color: #ffffff;
+    font-weight: 700;
 }
 
-.logo h2 {
-    font-size: 20px;
-}
-
-.logo span {
-    font-size: 11px;
+.brand-text span {
+    margin-top: 4px;
+    font-size: 10px;
+    line-height: 1.2;
     color: #9ca3af;
-    right: 10px;
 }
 
 
