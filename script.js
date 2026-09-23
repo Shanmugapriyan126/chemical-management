@@ -331,3 +331,43 @@ async function startApp() {
         await startApp();
     }
 })();
+
+
+/* =========================================================
+   RESPONSIVE NAVIGATION
+   Desktop: fixed sidebar
+   Mobile: slide-in navigation drawer
+   ========================================================= */
+(function initResponsiveNavigation() {
+    const sidebar = document.querySelector(".sidebar");
+    const menuBtn = document.getElementById("mobileMenuBtn");
+    const overlay = document.getElementById("sidebarOverlay");
+
+    if (!sidebar || !menuBtn || !overlay) return;
+
+    function closeSidebar() {
+        sidebar.classList.remove("open");
+        overlay.classList.remove("show");
+        menuBtn.setAttribute("aria-expanded", "false");
+    }
+
+    function toggleSidebar() {
+        const isOpen = sidebar.classList.toggle("open");
+        overlay.classList.toggle("show", isOpen);
+        menuBtn.setAttribute("aria-expanded", String(isOpen));
+    }
+
+    menuBtn.addEventListener("click", toggleSidebar);
+    overlay.addEventListener("click", closeSidebar);
+
+    document.addEventListener("click", (event) => {
+        const pageButton = event.target.closest("[data-page]");
+        if (pageButton && window.innerWidth <= 767) {
+            closeSidebar();
+        }
+    });
+
+    window.addEventListener("resize", () => {
+        if (window.innerWidth > 767) closeSidebar();
+    });
+})();
