@@ -198,11 +198,11 @@ function renderInventory() {
     table.innerHTML = filtered.length ? filtered.map(c => `
         <tr>
             <td><strong>${escapeHTML(c.chemical_code)}</strong></td>
-            <td>${escapeHTML(c.name)}</td><td>${escapeHTML(c.cas || "")}</td>
+            <td>${escapeHTML(c.chemical_name)}</td><td>${escapeHTML(c.cas_no || "")}</td>
             <td>${escapeHTML(c.department)}</td>
             <td><span class="status ${hazardClass(c.hazard)}">${escapeHTML(c.hazard)}</span></td>
             <td>${Number(c.stock).toFixed(2)}</td><td>${escapeHTML(c.unit)}</td>
-            <td>${escapeHTML(c.storage || "")}</td><td>${c.expiry_date || "-"}</td>
+            <td>${escapeHTML(c.storage_location || "")}</td><td>${c.expiry_date || "-"}</td>
             <td>${currentProfile?.role === "admin" ? `<button class="delete-btn" onclick="deleteChemical(${c.id})">Delete</button>` : '<span class="readonly-note">View only</span>'}</td>
         </tr>`).join("") :
         `<tr><td colspan="10" style="text-align:center;padding:30px;">No chemical records found.</td></tr>`;
