@@ -80,7 +80,7 @@ async function loadConsumption() {
     table.innerHTML = consumptionLogs.length ? consumptionLogs.map(l => `
         <tr>
             <td>${l.consumption_date}</td>
-            <td>${escapeHTML(l.chemicals?.chemical_code || "")} - ${escapeHTML(l.chemicals?.name || "")}</td>
+            <td>${escapeHTML(l.chemicals?.chemical_code || "")} - ${escapeHTML(l.chemicals?.chemical_name || "")}</td>
             <td>${escapeHTML(l.department)}</td>
             <td>${Number(l.quantity).toFixed(2)} ${escapeHTML(l.unit)}</td>
             <td>${escapeHTML(l.used_by || "-")}</td>
