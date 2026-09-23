@@ -117,10 +117,10 @@ document.getElementById("chemicalForm").addEventListener("submit", async e => {
         hazard: document.getElementById("hazard").value,
         stock: Number(document.getElementById("stock").value) || 0,
         unit: document.getElementById("unit").value,
-        storage: document.getElementById("storage").value.trim(),
+        storage_location: document.getElementById("storage").value.trim(),
         purchase_date: document.getElementById("purchaseDate").value || null,
         expiry_date: document.getElementById("expiryDate").value || null,
-        sds: document.getElementById("sds").value,
+        sds_available: document.getElementById("sds").value,
         ghs_available: document.getElementById("ghs").value,
         remarks: document.getElementById("remarks").value.trim(),
         created_by: currentUser.id
