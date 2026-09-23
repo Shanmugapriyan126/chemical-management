@@ -218,14 +218,162 @@ function renderRecent() {
 }
 
 async function deleteChemical(id) {
-    if (currentProfile?.role !== "admin") return;
-    const c = chemicals.find(x => x.id === id);
-    if (!c || !confirm(`Delete ${c.chemical_name} (${c.chemical_code})?`)) return;
-    const { error } = await db.from("chemicals").delete().eq("id", id);
-    if (error) return alert(error.message);
-    await loadChemicals();
-}
 
+    // Only Admin can delete
+    if (currentProfile?.role !== "admin") {
+        alert("Admin access required.");
+        return;
+    }
+
+    // Find the chemical
+    const c = chemicals.find(x => String(x.id) === String(id));
+
+    if (!c) {
+        alert("Chemical record not found.");
+        return;
+    }
+
+    const chemicalName = c.chemical_name || "Unknown Chemical";
+    const chemicalCode = c.chemical_code || "N/A";
+
+    try {
+
+        // =========================================================
+        // STEP 1: Check Consumption History
+        // =========================================================
+
+        const {
+            count,
+            error: historyError
+        } = await db
+            .from("consumption_logs")
+            .select("id", {
+                count: "exact",
+                head: true
+            })
+            .eq("chemical_id", id);
+
+        if (historyError) {
+
+            console.error(
+                "Consumption history check failed:",
+                historyError
+            );
+
+            alert(
+                "Unable to check chemical consumption history.\n\n" +
+                historyError.message
+            );
+
+            return;
+        }
+
+        // =========================================================
+        // STEP 2: Prevent deletion if consumption history exists
+        // =========================================================
+
+        if ((count || 0) > 0) {
+
+            alert(
+                "Cannot Delete Chemical\n\n" +
+                chemicalCode + " - " + chemicalName + "\n\n" +
+                "This chemical has " +
+                count +
+                " consumption record(s).\n\n" +
+                "The chemical cannot be permanently deleted because " +
+                "consumption history must be retained."
+            );
+
+            return;
+        }
+
+        // =========================================================
+        // STEP 3: Confirm deletion
+        // =========================================================
+
+        const confirmed = confirm(
+            "Are you sure you want to delete this chemical?\n\n" +
+            chemicalCode + " - " + chemicalName
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        // =========================================================
+        // STEP 4: Delete Chemical
+        // =========================================================
+
+        const {
+            data,
+            error
+        } = await db
+            .from("chemicals")
+            .delete()
+            .eq("id", id)
+            .select();
+
+        // =========================================================
+        // STEP 5: Handle Supabase error
+        // =========================================================
+
+        if (error) {
+
+            console.error(
+                "Delete chemical error:",
+                error
+            );
+
+            alert(
+                "Unable to delete chemical.\n\n" +
+                error.message
+            );
+
+            return;
+        }
+
+        // =========================================================
+        // STEP 6: Check whether a row was actually deleted
+        // =========================================================
+
+        if (!data || data.length === 0) {
+
+            alert(
+                "No chemical was deleted.\n\n" +
+                "Supabase returned 0 deleted rows."
+            );
+
+            return;
+        }
+
+        // =========================================================
+        // STEP 7: Success
+        // =========================================================
+
+        alert(
+            "Chemical deleted successfully.\n\n" +
+            chemicalCode + " - " + chemicalName
+        );
+
+        // Reload chemical data
+        await loadChemicals();
+
+        // Return to inventory
+        showPage("inventory");
+
+    } catch (err) {
+
+        console.error(
+            "Unexpected delete error:",
+            err
+        );
+
+        alert(
+            "Unexpected error while deleting the chemical.\n\n" +
+            err.message
+        );
+    }
+}
 function updateReports() {
     document.getElementById("sdsAvailable").innerText = chemicals.filter(c => c.sds === "Yes").length;
     document.getElementById("sdsMissing").innerText = chemicals.filter(c => c.sds === "No").length;
