@@ -121,7 +121,7 @@ document.getElementById("chemicalForm").addEventListener("submit", async e => {
         purchase_date: document.getElementById("purchaseDate").value || null,
         expiry_date: document.getElementById("expiryDate").value || null,
         sds: document.getElementById("sds").value,
-        ghs: document.getElementById("ghs").value,
+        ghs_available: document.getElementById("ghs").value,
         remarks: document.getElementById("remarks").value.trim(),
         created_by: currentUser.id
     };
