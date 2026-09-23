@@ -506,3 +506,425 @@ textarea {
         display: none;
     }
 }
+
+/* =========================================================
+   RK-CMS LOGIN PAGE - placed before the existing dashboard
+   ========================================================= */
+.rkcms-login-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: #f4f6f8;
+}
+.rkcms-login-gate.rkcms-hidden {
+  display: none !important;
+}
+.rkcms-login-card {
+  width: min(420px, 100%);
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  padding: 34px;
+  box-shadow: 0 18px 55px rgba(15, 23, 42, 0.12);
+}
+.rkcms-login-logo-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+.rkcms-login-logo-wrap img {
+  width: 76px;
+  height: 76px;
+  object-fit: contain;
+  border-radius: 12px;
+}
+.rkcms-login-card h1 {
+  text-align: center;
+  margin: 0;
+  font-size: 30px;
+  color: #111827;
+}
+.rkcms-login-subtitle {
+  text-align: center;
+  color: #6b7280;
+  margin: 6px 0 26px;
+}
+.rkcms-login-card label {
+  display: block;
+  margin: 14px 0 7px;
+  font-weight: 600;
+  color: #374151;
+}
+.rkcms-login-card input {
+  width: 100%;
+  padding: 12px 13px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+}
+.rkcms-login-card input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37,99,235,.10);
+}
+#rkcmsLoginButton {
+  width: 100%;
+  border: 0;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 20px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+#rkcmsLoginButton:hover {
+  background: #1d4ed8;
+}
+#rkcmsLoginButton:disabled {
+  opacity: .65;
+  cursor: wait;
+}
+.rkcms-login-message {
+  min-height: 20px;
+  margin-top: 10px;
+  text-align: center;
+  color: #b91c1c;
+  font-size: 13px;
+}
+.rkcms-login-card small {
+  display: block;
+  text-align: center;
+  margin-top: 22px;
+  color: #9ca3af;
+}
+
+/* =========================================================
+   RK-CMS - DESIGNED LOGIN PAGE
+   ========================================================= */
+.rkcms-login-page {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    min-height: 100vh;
+    overflow: auto;
+    background: #f7f9fc;
+    color: #162033;
+}
+.rkcms-login-page.hidden {
+    display: none !important;
+}
+.rkcms-login-background {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    background: linear-gradient(135deg, #f7f9fc 0%, #eef4ff 100%);
+}
+.rkcms-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(2px);
+    opacity: .55;
+}
+.rkcms-orb-1 {
+    width: 420px;
+    height: 420px;
+    left: -160px;
+    top: -140px;
+    background: #dbeafe;
+}
+.rkcms-orb-2 {
+    width: 500px;
+    height: 500px;
+    right: -180px;
+    bottom: -210px;
+    background: #e0e7ff;
+}
+.rkcms-grid-pattern {
+    position: absolute;
+    inset: 0;
+    opacity: .32;
+    background-image:
+        linear-gradient(rgba(37,99,235,.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(37,99,235,.045) 1px, transparent 1px);
+    background-size: 34px 34px;
+}
+.rkcms-login-layout {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 42px 32px;
+    display: grid;
+    grid-template-columns: 1.05fr .95fr;
+    align-items: center;
+    gap: 70px;
+}
+.rkcms-login-brand-panel {
+    padding: 25px 20px;
+}
+.rkcms-brand-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: #e8f0ff;
+    color: #2457a6;
+    border: 1px solid #d5e3ff;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1.4px;
+    margin-bottom: 24px;
+}
+.rkcms-brand-logo {
+    width: 84px;
+    height: 84px;
+    border-radius: 20px;
+    background: #fff;
+    border: 1px solid #e1e7ef;
+    box-shadow: 0 15px 35px rgba(15,23,42,.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 25px;
+    overflow: hidden;
+}
+.rkcms-brand-logo img {
+    width: 72px;
+    height: 72px;
+    object-fit: contain;
+}
+.rkcms-login-brand-panel h1 {
+    margin: 0;
+    font-size: clamp(46px, 6vw, 72px);
+    line-height: .95;
+    letter-spacing: -3px;
+    color: #12213d;
+}
+.rkcms-login-brand-panel h2 {
+    margin: 13px 0 16px;
+    font-size: 22px;
+    font-weight: 650;
+    color: #315b91;
+}
+.rkcms-login-brand-panel > p {
+    max-width: 520px;
+    margin: 0;
+    color: #64748b;
+    line-height: 1.7;
+    font-size: 15px;
+}
+.rkcms-feature-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 13px 22px;
+    max-width: 540px;
+    margin-top: 30px;
+    color: #334155;
+    font-size: 13px;
+    font-weight: 600;
+}
+.rkcms-feature-list div {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+.rkcms-feature-list span {
+    width: 21px;
+    height: 21px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #dcfce7;
+    color: #15803d;
+    font-size: 12px;
+    font-weight: 900;
+}
+.rkcms-login-form-panel {
+    display: flex;
+    justify-content: center;
+}
+.rkcms-login-card {
+    width: min(440px, 100%);
+    padding: 38px;
+    border-radius: 22px;
+    background: rgba(255,255,255,.96);
+    border: 1px solid #e3e8f0;
+    box-shadow: 0 25px 70px rgba(15,23,42,.12);
+}
+.rkcms-mobile-logo {
+    display: none;
+}
+.rkcms-login-heading span {
+    color: #2563eb;
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.rkcms-login-heading h2 {
+    margin: 7px 0 7px;
+    font-size: 29px;
+    letter-spacing: -.6px;
+    color: #172033;
+}
+.rkcms-login-heading p {
+    margin: 0 0 27px;
+    color: #718096;
+    font-size: 13px;
+}
+.rkcms-input-group {
+    margin-bottom: 18px;
+}
+.rkcms-input-group label {
+    display: block;
+    margin-bottom: 7px;
+    color: #344054;
+    font-size: 13px;
+    font-weight: 700;
+}
+.rkcms-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+.rkcms-input-wrap > span {
+    position: absolute;
+    left: 13px;
+    color: #94a3b8;
+    font-size: 14px;
+}
+.rkcms-input-wrap input {
+    width: 100%;
+    height: 47px;
+    padding: 0 45px 0 39px;
+    border: 1px solid #d9e0e8;
+    border-radius: 9px;
+    outline: none;
+    background: #fbfcfe;
+    color: #1f2937;
+    font-size: 14px;
+    transition: .2s ease;
+}
+.rkcms-input-wrap input:focus {
+    border-color: #5b8def;
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(37,99,235,.09);
+}
+.rkcms-eye-btn {
+    position: absolute;
+    right: 9px;
+    border: 0;
+    background: transparent;
+    color: #2563eb;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 800;
+}
+.rkcms-signin-btn {
+    width: 100%;
+    height: 48px;
+    border: 0;
+    border-radius: 9px;
+    margin-top: 5px;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 17px;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 9px 20px rgba(37,99,235,.20);
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+.rkcms-signin-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 25px rgba(37,99,235,.25);
+}
+.rkcms-signin-btn:disabled {
+    opacity: .65;
+    cursor: wait;
+    transform: none;
+}
+.rkcms-login-error {
+    min-height: 19px;
+    margin: 9px 0 0;
+    text-align: center;
+    color: #b42318;
+    font-size: 12px;
+}
+.rkcms-login-security {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    margin-top: 25px;
+    padding: 13px;
+    border: 1px solid #e7edf5;
+    border-radius: 10px;
+    background: #f8fafc;
+    color: #64748b;
+}
+.rkcms-login-security > span {
+    font-size: 15px;
+}
+.rkcms-login-security strong,
+.rkcms-login-security small {
+    display: block;
+}
+.rkcms-login-security strong {
+    color: #475467;
+    font-size: 11px;
+}
+.rkcms-login-security small {
+    margin-top: 2px;
+    line-height: 1.4;
+    font-size: 10px;
+}
+.rkcms-login-footer {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 22px;
+    color: #98a2b3;
+    font-size: 10px;
+}
+@media (max-width: 850px) {
+    .rkcms-login-layout {
+        grid-template-columns: 1fr;
+        max-width: 560px;
+        gap: 15px;
+        padding: 25px 18px;
+    }
+    .rkcms-login-brand-panel {
+        display: none;
+    }
+    .rkcms-mobile-logo {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 17px;
+    }
+    .rkcms-mobile-logo img {
+        width: 62px;
+        height: 62px;
+        object-fit: contain;
+    }
+    .rkcms-login-card {
+        padding: 30px 25px;
+    }
+}
+@media (max-width: 430px) {
+    .rkcms-login-card {
+        padding: 25px 19px;
+        border-radius: 17px;
+    }
+}
