@@ -71,7 +71,7 @@ async function loadChemicals() {
 
 async function loadConsumption() {
     const { data, error } = await db.from("consumption_logs")
-        .select("*, chemicals(name, chemical_code)")
+        .select("*, chemicals(chemical_name, chemical_code)")
         .order("consumption_date", {ascending:false})
         .order("created_at", {ascending:false});
     if (error) { console.error(error); return; }
@@ -94,7 +94,7 @@ function populateConsumptionChemicals() {
     const select = document.getElementById("consumptionChemical");
     if (!select) return;
     select.innerHTML = '<option value="">Select Chemical</option>' + chemicals.map(c =>
-        `<option value="${c.id}">${escapeHTML(c.chemical_code)} - ${escapeHTML(c.name)} (Stock: ${c.stock} ${escapeHTML(c.unit)})</option>`
+        `<option value="${c.id}">${escapeHTML(c.chemical_code)} - ${escapeHTML(c.chemical_name)} (Stock: ${c.stock} ${escapeHTML(c.unit)})</option>`
     ).join("");
 }
 
