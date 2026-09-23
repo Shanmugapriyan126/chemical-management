@@ -220,7 +220,7 @@ function renderRecent() {
 async function deleteChemical(id) {
     if (currentProfile?.role !== "admin") return;
     const c = chemicals.find(x => x.id === id);
-    if (!c || !confirm(`Delete ${c.name} (${c.chemical_code})?`)) return;
+    if (!c || !confirm(`Delete ${c.chemical_name} (${c.chemical_code})?`)) return;
     const { error } = await db.from("chemicals").delete().eq("id", id);
     if (error) return alert(error.message);
     await loadChemicals();
