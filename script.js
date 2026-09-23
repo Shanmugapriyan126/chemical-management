@@ -111,7 +111,7 @@ document.getElementById("chemicalForm").addEventListener("submit", async e => {
     const payload = {
         chemical_code: nextCode,
         name: document.getElementById("chemicalName").value.trim(),
-        cas: document.getElementById("casNumber").value.trim(),
+        cas_no: document.getElementById("casNumber").value.trim(),
         supplier: document.getElementById("supplier").value.trim(),
         department: document.getElementById("department").value,
         hazard: document.getElementById("hazard").value,
