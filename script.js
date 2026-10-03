@@ -733,15 +733,36 @@ function editChemical(id) {
             remarks: document.getElementById("editRemarks").value.trim() || null
         };
 
-        const { error } = await db.from("chemicals").update(payload).eq("id", c.id);
+        // Keep the update limited to the selected chemical.
+        // Returning the updated row also lets us detect an RLS policy that
+        // matches the UPDATE command but does not allow this row to be changed.
+        payload.updated_at = new Date().toISOString();
+
+        const { data: updatedRow, error } = await db
+            .from("chemicals")
+            .update(payload)
+            .eq("id", c.id)
+            .select("id, chemical_code")
+            .single();
 
         if (error) {
-            alert("Chemical could not be updated.\n\n" + error.message);
+            console.error("RK-CMS UPDATE error:", error);
+            alert(
+                "Chemical could not be updated.\n\n" +
+                error.message +
+                "\n\nIf this is an RLS error, run the UPDATE policy SQL provided with this update."
+            );
+            return;
+        }
+
+        if (!updatedRow) {
+            alert("No chemical was updated. Please verify the Supabase UPDATE policy.");
             return;
         }
 
         closeChemicalModal();
         await loadChemicals();
+        alert("Chemical updated successfully.");
     });
 }
 
