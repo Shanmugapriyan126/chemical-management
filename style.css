@@ -931,479 +931,448 @@ textarea {
 
 
 /* =========================================================
-   RK-CMS - FINAL RESPONSIVE APPLICATION SHELL
-   Fixes common topbar width, page width and device layouts.
-   This block intentionally comes last so it overrides older rules.
+   RK-CMS 2.0 — PROFESSIONAL SYMBOL UI
+   No emoji/image icons required.
    ========================================================= */
 
-/* Generic utility class used by script.js for role/page visibility. */
-.hidden {
-    display: none !important;
+.nav-icon,
+.quick-icon,
+.symbol-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    font-weight: 700;
+    line-height: 1;
 }
 
-/* Prevent the browser from creating horizontal page overflow. */
-html,
-body {
-    width: 100%;
-    min-width: 0;
-    min-height: 100%;
+.nav-icon {
+    width: 20px;
+    margin-right: 10px;
+    font-size: 16px;
 }
 
-body {
-    display: block;
-    overflow-x: hidden;
+.quick-icon {
+    width: 28px;
+    height: 28px;
+    margin-right: 9px;
+    border-radius: 8px;
+    background: #eef4ff;
+    color: #2563eb;
+    font-size: 15px;
 }
 
-/* =========================================================
-   APPLICATION SHELL
-   ========================================================= */
-
-.app-shell {
-    width: 100%;
-    min-width: 0;
-    min-height: 100vh;
+.symbol-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: #eaf1ff;
+    color: #2563eb;
+    font-size: 22px;
 }
 
-.sidebar {
-    width: 250px;
-    min-width: 250px;
-    height: 100vh;
-    position: fixed;
-    left: 0;
-    top: 0;
-    z-index: 1100;
-    overflow-x: hidden;
-    overflow-y: auto;
-}
-
-.main {
-    width: auto;
-    max-width: none;
-    min-width: 0;
-    min-height: 100vh;
-    margin-left: 250px;
-    overflow-x: hidden;
-}
-
-/* =========================================================
-   COMMON TOPBAR
-   ========================================================= */
-
-.topbar {
-    width: 100%;
-    max-width: none;
-    min-width: 0;
-    height: 80px;
-    min-height: 80px;
-    padding: 18px 30px;
+.nav-btn {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-    position: sticky;
-    top: 0;
-    z-index: 1000;
+    min-height: 42px;
+    transition: background .18s ease, transform .18s ease;
+}
+
+.nav-btn:hover {
+    transform: translateX(1px);
+}
+
+.quick-actions button {
+    display: flex;
+    align-items: center;
+}
+
+.panel-header h2 {
+    letter-spacing: -.3px;
+}
+
+#inventoryTable td {
+    vertical-align: middle;
+}
+
+.code-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 27px;
+    padding: 0 8px;
+    border-radius: 7px;
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .3px;
+}
+
+.chemical-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.chemical-cell strong {
+    color: #172033;
+    font-size: 13px;
+}
+
+.chemical-cell small {
+    color: #94a3b8;
+    font-size: 10px;
+}
+
+.action-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.icon-action {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid #dfe6ef;
+    border-radius: 8px;
     background: #fff;
-}
-
-.topbar-left {
-    min-width: 0;
-    display: flex;
+    color: #64748b;
+    display: inline-flex;
     align-items: center;
-    gap: 12px;
-}
-
-.topbar-left > div {
-    min-width: 0;
-}
-
-.topbar-actions {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 10px;
-    flex-shrink: 0;
-}
-
-.logout-btn {
+    justify-content: center;
+    font-size: 17px;
+    font-weight: 700;
     cursor: pointer;
-    padding: 7px 10px;
-    border: 1px solid #d1d5db;
-    border-radius: 5px;
-    background: #fff;
-    color: #111827;
+    transition: all .16s ease;
+}
+
+.icon-action:hover {
+    transform: translateY(-1px);
+    border-color: #b9c7d8;
+    box-shadow: 0 4px 12px rgba(15,23,42,.08);
+}
+
+.icon-action.view:hover,
+.icon-action.edit:hover {
+    color: #2563eb;
+    background: #eff6ff;
+}
+
+.icon-action.delete {
+    color: #b42318;
+}
+
+.icon-action.delete:hover {
+    color: #fff;
+    background: #dc2626;
+    border-color: #dc2626;
+}
+
+.expiry-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.expiry-warning {
+    color: #b54708;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.expiry-danger {
+    color: #b42318;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.empty-state {
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    color: #64748b;
+}
+
+.empty-state strong {
+    color: #334155;
+}
+
+.empty-state span {
     font-size: 12px;
 }
 
-.logout-btn:hover {
-    background: #f9fafb;
+.empty-symbol {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #f1f5f9;
+    color: #94a3b8;
+    font-size: 22px;
+    margin-bottom: 4px;
 }
 
-.mobile-menu-btn {
-    display: none;
-    width: 40px;
-    height: 40px;
-    flex: 0 0 40px;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
+/* Modal */
+body.modal-open {
+    overflow: hidden;
+}
+
+.rkcms-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 22px;
+}
+
+.rkcms-modal.hidden {
+    display: none !important;
+}
+
+.rkcms-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15,23,42,.48);
+    backdrop-filter: blur(4px);
+}
+
+.rkcms-modal-card {
+    position: relative;
+    width: min(760px, 100%);
+    max-height: min(88vh, 760px);
+    overflow: auto;
     background: #fff;
-    color: #111827;
-    font-size: 20px;
-    line-height: 1;
+    border: 1px solid #e4e9f0;
+    border-radius: 18px;
+    box-shadow: 0 30px 90px rgba(15,23,42,.25);
+    animation: rkcmsModalIn .16s ease-out;
+}
+
+@keyframes rkcmsModalIn {
+    from { opacity: 0; transform: translateY(8px) scale(.985); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.rkcms-modal-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 22px 24px 18px;
+    background: rgba(255,255,255,.96);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid #edf1f5;
+}
+
+.rkcms-modal-header span {
+    color: #2563eb;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+}
+
+.rkcms-modal-header h2 {
+    margin-top: 5px;
+    color: #172033;
+    font-size: 22px;
+    letter-spacing: -.4px;
+}
+
+.modal-close {
+    width: 34px;
+    height: 34px;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    background: #fff;
+    color: #64748b;
+    font-size: 22px;
     cursor: pointer;
 }
 
-/* =========================================================
-   COMMON PAGE AREA
-   ========================================================= */
-
-.page {
-    width: 100%;
-    max-width: none;
-    min-width: 0;
-    padding: 30px;
-    overflow-x: hidden;
+.modal-close:hover {
+    color: #172033;
+    background: #f8fafc;
 }
 
-.page.active {
-    display: block;
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1px;
+    margin: 20px 24px;
+    overflow: hidden;
+    border: 1px solid #e8edf3;
+    border-radius: 12px;
+    background: #e8edf3;
 }
 
-.page > * {
-    max-width: 100%;
-    min-width: 0;
+.detail-grid > div {
+    min-height: 70px;
+    padding: 13px 15px;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
 }
 
-/* =========================================================
-   DASHBOARD / REPORT CARDS
-   ========================================================= */
-
-.cards {
-    width: 100%;
-    min-width: 0;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+.detail-grid span:first-child,
+.detail-remarks > span {
+    color: #94a3b8;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .6px;
 }
 
-.card {
-    min-width: 0;
+.detail-grid strong {
+    color: #334155;
+    font-size: 13px;
 }
 
-.dashboard-grid {
-    width: 100%;
-    min-width: 0;
-    grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+.detail-remarks {
+    margin: 0 24px 20px;
+    padding: 15px;
+    border: 1px solid #e8edf3;
+    border-radius: 12px;
+    background: #f8fafc;
 }
 
-.dashboard-grid > * {
-    min-width: 0;
+.detail-remarks p {
+    margin-top: 7px;
+    color: #475569;
+    line-height: 1.55;
+    font-size: 13px;
 }
 
-/* =========================================================
-   PANELS / FILTERS / FORMS
-   ========================================================= */
-
-.panel {
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 9px;
+    padding: 0 24px 22px;
 }
 
-.panel-header {
-    min-width: 0;
+.danger-btn {
+    border: 0;
+    border-radius: 8px;
+    padding: 10px 15px;
+    background: #dc2626;
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
 }
 
-.filters {
-    width: 100%;
-    min-width: 0;
-    grid-template-columns:
-        minmax(0, 2fr)
-        minmax(160px, 1fr)
-        minmax(160px, 1fr);
+.danger-btn:hover {
+    background: #b91c1c;
 }
 
-.filters input,
-.filters select {
-    width: 100%;
-    min-width: 0;
+.delete-confirm {
+    text-align: center;
+    padding: 28px 24px 2px;
 }
 
-.form-grid {
-    width: 100%;
-    min-width: 0;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+.delete-symbol {
+    width: 52px;
+    height: 52px;
+    margin: 0 auto 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #fef2f2;
+    color: #dc2626;
+    font-size: 30px;
+    font-weight: 300;
 }
 
-.form-group {
-    min-width: 0;
+.delete-confirm h3 {
+    color: #172033;
+    font-size: 18px;
 }
 
-.form-group input,
-.form-group select,
-.form-group textarea {
-    width: 100%;
-    min-width: 0;
+.delete-confirm p {
+    max-width: 480px;
+    margin: 8px auto 18px;
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.55;
 }
 
-/* =========================================================
-   TABLES
-   ========================================================= */
-
-.table-container {
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
+.edit-form {
+    padding-top: 20px;
 }
 
-.table-container table {
-    width: 100%;
-    min-width: 800px;
+.edit-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    padding: 0 24px;
 }
 
-/* =========================================================
-   TABLET: 768px - 1023px
-   ========================================================= */
+.edit-remarks {
+    margin: 16px 24px 0;
+}
 
-@media (min-width: 768px) and (max-width: 1023px) {
-
-    .sidebar {
-        width: 220px;
-        min-width: 220px;
-        padding: 16px;
+@media (max-width: 700px) {
+    .rkcms-modal {
+        padding: 10px;
     }
 
-    .main {
-        width: auto;
-        max-width: none;
-        margin-left: 220px;
+    .rkcms-modal-card {
+        max-height: 94vh;
+        border-radius: 14px;
     }
 
-    .topbar {
-        height: 76px;
-        min-height: 76px;
-        padding: 16px 24px;
-    }
-
-    .page {
-        padding: 24px;
-    }
-
-    .cards {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 16px;
-    }
-
-    .dashboard-grid {
+    .detail-grid,
+    .edit-grid {
         grid-template-columns: 1fr;
     }
 
-    .filters {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .filters input {
-        grid-column: 1 / -1;
-    }
-
-    .form-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 16px;
-    }
-}
-
-/* =========================================================
-   MOBILE: below 768px
-   ========================================================= */
-
-@media (max-width: 767px) {
-
-    .sidebar {
-        width: 250px;
-        min-width: 250px;
-        padding: 16px;
-        transform: translateX(-105%);
-        transition: transform 0.22s ease;
-        box-shadow: none;
-    }
-
-    .sidebar.open {
-        transform: translateX(0);
-        box-shadow: 8px 0 25px rgba(0, 0, 0, 0.18);
-    }
-
-    .sidebar-overlay {
-        display: block;
-        position: fixed;
-        inset: 0;
-        z-index: 1050;
-        background: rgba(15, 23, 42, 0.45);
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.22s ease;
-    }
-
-    .sidebar-overlay.show {
-        opacity: 1;
-        pointer-events: auto;
-    }
-
-    .main {
-        width: 100%;
-        max-width: 100%;
+    .rkcms-modal-header,
+    .detail-grid,
+    .edit-grid {
         margin-left: 0;
+        margin-right: 0;
     }
 
-    .topbar {
-        width: 100%;
-        height: 64px;
-        min-height: 64px;
-        padding: 10px 14px;
-        gap: 10px;
+    .detail-grid,
+    .edit-grid,
+    .edit-remarks {
+        margin-left: 15px;
+        margin-right: 15px;
     }
 
-    .mobile-menu-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
+    .detail-grid {
+        gap: 0;
+        background: transparent;
+        border: 0;
     }
 
-    .topbar h1 {
-        font-size: 20px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+    .detail-grid > div {
+        border: 1px solid #e8edf3;
+        border-radius: 8px;
+        margin-bottom: 6px;
     }
 
-    .topbar p {
-        font-size: 11px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+    .modal-footer {
+        padding-left: 15px;
+        padding-right: 15px;
     }
 
-    .topbar-actions {
-        gap: 6px;
+    .action-group {
+        gap: 3px;
     }
 
-    .user-info {
-        max-width: 150px;
-        padding: 8px 10px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .logout-btn {
-        padding: 7px 8px;
-    }
-
-    .page {
-        width: 100%;
-        padding: 16px;
-    }
-
-    .cards {
-        grid-template-columns: 1fr;
-        gap: 14px;
-        margin-bottom: 18px;
-    }
-
-    .dashboard-grid {
-        grid-template-columns: 1fr;
-        gap: 16px;
-    }
-
-    .panel {
-        padding: 16px;
-        margin-bottom: 16px;
-    }
-
-    .panel-header {
-        align-items: flex-start;
-        flex-wrap: wrap;
-        gap: 10px;
-    }
-
-    .filters {
-        grid-template-columns: 1fr;
-        gap: 10px;
-    }
-
-    .filters input {
-        grid-column: auto;
-    }
-
-    .form-grid {
-        grid-template-columns: 1fr;
-        gap: 15px;
-    }
-
-    .form-buttons {
-        flex-direction: column-reverse;
-        align-items: stretch;
-    }
-
-    .form-buttons button {
-        width: 100%;
-    }
-
-    .table-container {
-        width: 100%;
-        max-width: 100%;
-        overflow-x: auto;
-    }
-
-    .table-container table {
-        min-width: 800px;
-    }
-
-    .quick-actions button {
-        width: 100%;
-    }
-}
-
-/* =========================================================
-   SMALL MOBILE: below 480px
-   ========================================================= */
-
-@media (max-width: 479px) {
-
-    .topbar {
-        padding: 9px 10px;
-    }
-
-    .topbar h1 {
-        font-size: 18px;
-    }
-
-    .topbar p {
-        font-size: 10px;
-    }
-
-    .user-info {
-        display: none;
-    }
-
-    .page {
-        padding: 12px;
-    }
-
-    .card {
-        padding: 14px;
-    }
-
-    .card h2 {
-        font-size: 22px;
-    }
-
-    .panel {
-        padding: 14px;
-        border-radius: 10px;
-    }
-
-    .panel-header h2 {
-        font-size: 16px;
+    .icon-action {
+        width: 30px;
+        height: 30px;
     }
 }
