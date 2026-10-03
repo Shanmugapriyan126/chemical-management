@@ -1,243 +1,175 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RK-CMS</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b1220">
+  <title>RK-CMS | Chemical Management System</title>
+  <link rel="icon" href="logo.png">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
 </head>
 <body>
+  <div id="toastHost" class="toast-host"></div>
 
-<!-- LOGIN PAGE -->
-<section id="loginPage" class="rkcms-login-page">
-    <div class="rkcms-login-background">
-        <div class="rkcms-orb rkcms-orb-1"></div>
-        <div class="rkcms-orb rkcms-orb-2"></div>
-        <div class="rkcms-grid-pattern"></div>
+  <section id="loginPage" class="login-page">
+    <div class="login-glow glow-a"></div><div class="login-glow glow-b"></div>
+    <div class="login-shell">
+      <div class="login-brand">
+        <div class="logo-frame"><img src="logo.png" alt="RK Industries"></div>
+        <span class="eyebrow">RK INDUSTRIES • EHS</span>
+        <h1>RK-CMS</h1>
+        <p>Chemical Management System</p>
+        <div class="login-points">
+          <span>✓ Live chemical inventory</span><span>✓ SDS document control</span>
+          <span>✓ Consumption tracking</span><span>✓ Audit-ready reports</span>
+        </div>
+      </div>
+      <div class="login-card">
+        <span class="eyebrow">SECURE ACCESS</span>
+        <h2>Welcome back</h2>
+        <p class="muted">Sign in with your authorized factory account.</p>
+        <form id="loginForm">
+          <label>Email<input id="loginEmail" type="email" placeholder="name@company.com" autocomplete="username" required></label>
+          <label>Password<div class="password-wrap"><input id="loginPassword" type="password" placeholder="Enter password" autocomplete="current-password" required><button type="button" id="togglePassword" class="ghost-btn">Show</button></div></label>
+          <button class="primary-btn wide" type="submit" id="loginBtn">Sign in <span>→</span></button>
+          <p id="loginError" class="form-error"></p>
+        </form>
+        <div class="secure-note">🔐 Access is controlled by Supabase authentication and role permissions.</div>
+      </div>
     </div>
+  </section>
 
-    <div class="rkcms-login-layout">
-        <div class="rkcms-login-brand-panel">
-            <div class="rkcms-brand-badge">RK INDUSTRIES</div>
-            <div class="rkcms-brand-logo">
-                <img src="logo.png" alt="RK Industries">
-            </div>
-            <h1>RK-CMS</h1>
-            <h2>Chemical Management System</h2>
-            <p>
-                Securely manage chemical inventory, SDS records,
-                verification status, stock and consumption across your facility.
-            </p>
-
-            <div class="rkcms-feature-list">
-                <div><span>✓</span> Chemical Inventory Management</div>
-                <div><span>✓</span> SDS & GHS Tracking</div>
-                <div><span>✓</span> Consumption Monitoring</div>
-                <div><span>✓</span> EHS Audit Readiness</div>
-            </div>
-        </div>
-
-        <div class="rkcms-login-form-panel">
-            <div class="rkcms-login-card">
-                <div class="rkcms-mobile-logo">
-                    <img src="logo.png" alt="RK Industries">
-                </div>
-
-                <div class="rkcms-login-heading">
-                    <span>Welcome back</span>
-                    <h2>Sign in to RK-CMS</h2>
-                    <p>Use your authorized factory account to continue.</p>
-                </div>
-
-                <form id="loginForm" autocomplete="on">
-                    <div class="rkcms-input-group">
-                        <label for="loginEmail">Email Address</label>
-                        <div class="rkcms-input-wrap">
-                            <span>✉</span>
-                            <input id="loginEmail" type="email" autocomplete="username"
-                                   placeholder="name@company.com" required>
-                        </div>
-                    </div>
-
-                    <div class="rkcms-input-group">
-                        <div class="rkcms-label-row">
-                            <label for="loginPassword">Password</label>
-                        </div>
-                        <div class="rkcms-input-wrap">
-                            <span>🔒</span>
-                            <input id="loginPassword" type="password" autocomplete="current-password"
-                                   placeholder="Enter your password" required>
-                            <button type="button" id="togglePassword" class="rkcms-eye-btn" aria-label="Show password">Show</button>
-                        </div>
-                    </div>
-
-                    <button class="rkcms-signin-btn" type="submit">
-                        <span>Sign In</span>
-                        <span>→</span>
-                    </button>
-
-                    <p id="loginError" class="rkcms-login-error"></p>
-                </form>
-
-                <div class="rkcms-login-security">
-                    <span>🔐</span>
-                    <div>
-                        <strong>Authorized access only</strong>
-                        <small>Your account permissions are controlled through RK-CMS.</small>
-                    </div>
-                </div>
-
-                <div class="rkcms-login-footer">
-                    <span>Internal Factory Use</span>
-                    <span>•</span>
-                    <span>© 2026 EHS</span>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- APP -->
-<div id="appShell" class="app-shell hidden">
-    <aside class="sidebar">
-        <div class="brand">
-            <img src="logo.png" alt="Company logo" class="sidebar-logo">
-            <div class="brand-text">
-                <h2>RK-CMS</h2>
-                <span>Internal Manage</span>
-            </div>
-        </div>
-
-        <nav>
-            <button class="nav-btn active" data-page="dashboard">📊 Dashboard</button>
-            <button class="nav-btn" data-page="inventory">🧪 Chemical Inventory</button>
-            <button class="nav-btn admin-only" data-page="addChemical">➕ Add Chemical</button>
-            <button class="nav-btn" data-page="consumption">📉 Consumption Log</button>
-            <button class="nav-btn" data-page="reports">📄 Reports</button>
-        </nav>
-
-        <div class="sidebar-footer">
-            <small>Internal Factory Use</small><br>
-            <small>© 2026 EHS</small>
-        </div>
+  <div id="appShell" class="app-shell hidden">
+    <aside id="sidebar" class="sidebar">
+      <div class="brand">
+        <img src="logo.png" alt="RK Industries">
+        <div><strong>RK-CMS</strong><small>Chemical Management</small></div>
+      </div>
+      <nav id="mainNav">
+        <button class="nav-item active" data-page="dashboard"><span>▦</span> Dashboard</button>
+        <button class="nav-item" data-page="inventory"><span>◈</span> Chemical Inventory</button>
+        <button class="nav-item admin-only" data-page="addChemical"><span>＋</span> Add Chemical</button>
+        <button class="nav-item" data-page="consumption"><span>↘</span> Consumption</button>
+        <button class="nav-item" data-page="reports"><span>▤</span> Reports</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="live-chip"><i></i> Live sync enabled</div>
+        <button id="logoutBtn" class="logout"><span>↪</span> Sign out</button>
+      </div>
     </aside>
 
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
+    <div id="mobileOverlay" class="mobile-overlay"></div>
     <main class="main">
-        <header class="topbar">
-            <div class="topbar-left">
-                <button type="button" class="mobile-menu-btn" id="mobileMenuBtn"
-                        aria-label="Open navigation" aria-expanded="false">☰</button>
-                <div>
-                    <h1 id="pageTitle">Dashboard</h1>
-                    <p>Chemical Management System</p>
-                </div>
-            </div>
-            <div class="topbar-actions">
-                <div class="user-info" id="userInfo">👤 User</div>
-                <button class="logout-btn" id="logoutBtn">Logout</button>
-            </div>
-        </header>
+      <header class="topbar">
+        <button id="mobileMenuBtn" class="icon-btn mobile-only">☰</button>
+        <div><span class="eyebrow">FACTORY CHEMICAL CONTROL</span><h1 id="pageTitle">Dashboard</h1></div>
+        <div class="top-actions">
+          <span id="syncStatus" class="sync-status"><i></i> Synced</span>
+          <div id="userMenu" class="user-menu"><div id="avatar" class="avatar">U</div><div><strong id="userName">User</strong><small id="userRole">USER</small></div></div>
+        </div>
+      </header>
 
-        <section id="dashboard" class="page active">
-            <div class="cards">
-                <div class="card"><div class="card-icon blue">🧪</div><div><span>Total Chemicals</span><h2 id="totalChemicals">0</h2></div></div>
-                <div class="card"><div class="card-icon green">📦</div><div><span>In Stock</span><h2 id="stockChemicals">0</h2></div></div>
-                <div class="card"><div class="card-icon orange">⚠️</div><div><span>Hazardous</span><h2 id="hazardousChemicals">0</h2></div></div>
-                <div class="card"><div class="card-icon red">📅</div><div><span>Expiry / Review Due</span><h2 id="expiryChemicals">0</h2></div></div>
+      <section id="dashboard" class="page active">
+        <div class="page-head"><div><span class="eyebrow">OVERVIEW</span><h2>Good morning, <span id="dashName">User</span></h2><p>Monitor stock, hazards, SDS status and chemical movement.</p></div><button class="primary-btn admin-only" data-page="addChemical">＋ Add chemical</button></div>
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-icon blue">◈</div><div><small>Total chemicals</small><strong id="totalChemicals">0</strong><span class="stat-note">Active records</span></div></div>
+          <div class="stat-card"><div class="stat-icon green">▣</div><div><small>In stock</small><strong id="stockChemicals">0</strong><span class="stat-note">Available items</span></div></div>
+          <div class="stat-card"><div class="stat-icon amber">⚠</div><div><small>Expiry / review</small><strong id="expiryChemicals">0</strong><span class="stat-note">Within 30 days</span></div></div>
+          <div class="stat-card"><div class="stat-icon red">!</div><div><small>Missing SDS</small><strong id="missingSds">0</strong><span class="stat-note">Needs attention</span></div></div>
+        </div>
+        <div class="dashboard-grid">
+          <div class="panel">
+            <div class="panel-head"><div><h3>Recent chemicals</h3><p>Latest active inventory records</p></div><button class="text-btn" data-page="inventory">View all →</button></div>
+            <div class="table-wrap"><table><thead><tr><th>Code</th><th>Chemical</th><th>Department</th><th>Stock</th><th>SDS</th><th>Status</th></tr></thead><tbody id="recentTable"></tbody></table></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><h3>Compliance pulse</h3><p>Current documentation status</p></div></div>
+            <div class="compliance-list">
+              <div><div><span>SDS coverage</span><strong id="sdsPct">0%</strong></div><div class="progress"><i id="sdsBar"></i></div></div>
+              <div><div><span>GHS labels</span><strong id="ghsPct">0%</strong></div><div class="progress"><i id="ghsBar"></i></div></div>
+              <div><div><span>Stock records</span><strong id="stockPct">0%</strong></div><div class="progress"><i id="stockBar"></i></div></div>
             </div>
+            <div class="quick-actions"><button data-page="consumption">↘ Record consumption <span>→</span></button><button data-page="reports">▤ Open reports <span>→</span></button></div>
+          </div>
+        </div>
+      </section>
 
-            <div class="dashboard-grid">
-                <div class="panel">
-                    <div class="panel-header"><h2>Recent Chemicals</h2><button class="small-btn" data-page="inventory">View All</button></div>
-                    <div class="table-container"><table><thead><tr><th>ID</th><th>Chemical Name</th><th>Department</th><th>Stock</th><th>Status</th></tr></thead><tbody id="recentTable"></tbody></table></div>
-                </div>
-                <div class="panel">
-                    <div class="panel-header"><h2>Quick Actions</h2></div>
-                    <div class="quick-actions">
-                        <button class="admin-only" data-page="addChemical">➕ Add Chemical</button>
-                        <button data-page="inventory">🔍 Search Inventory</button>
-                        <button data-page="consumption">📉 Record Consumption</button>
-                        <button onclick="exportCSV()">📥 Export Inventory</button>
-                    </div>
-                </div>
-            </div>
-        </section>
+      <section id="inventory" class="page">
+        <div class="page-head"><div><span class="eyebrow">MASTER DATA</span><h2>Chemical Inventory</h2><p>Search, review and manage live chemical records.</p></div><div class="head-actions"><button class="secondary-btn" id="refreshBtn">↻ Refresh</button><button class="primary-btn admin-only" data-page="addChemical">＋ Add chemical</button></div></div>
+        <div class="filter-bar"><input id="searchChemical" placeholder="⌕ Search name, code, CAS, supplier..."><select id="departmentFilter"><option value="">All departments</option></select><select id="hazardFilter"><option value="">All hazards</option><option>Flammable</option><option>Corrosive</option><option>Toxic</option><option>Irritant</option><option>Oxidizing</option><option>Non-Hazardous</option></select><select id="sdsFilter"><option value="">SDS: All</option><option value="yes">SDS available</option><option value="no">SDS missing</option></select></div>
+        <div class="panel no-pad"><div class="table-wrap"><table class="inventory-table"><thead><tr><th>Code</th><th>Chemical</th><th>Hazard</th><th>Department</th><th>Stock</th><th>Location</th><th>Expiry</th><th>SDS</th><th>Actions</th></tr></thead><tbody id="inventoryTable"></tbody></table></div></div>
+      </section>
 
-        <section id="inventory" class="page">
-            <div class="panel">
-                <div class="panel-header"><h2>Chemical Inventory</h2><button onclick="exportCSV()" class="primary-btn">📥 Export CSV</button></div>
-                <div class="filters">
-                    <input type="text" id="searchChemical" placeholder="🔍 Search chemical...">
-                    <select id="departmentFilter"><option value="">All Departments</option></select>
-                    <select id="hazardFilter"><option value="">All Hazard Types</option><option>Flammable</option><option>Corrosive</option><option>Toxic</option><option>Irritant</option><option>Oxidizing</option><option>Non-Hazardous</option></select>
-                </div>
-                <div class="table-container"><table><thead><tr><th>ID</th><th>Chemical Name</th><th>CAS No.</th><th>Department</th><th>Hazard</th><th>Stock</th><th>Unit</th><th>Storage</th><th>Expiry</th><th>Actions</th></tr></thead><tbody id="inventoryTable"></tbody></table></div>
-            </div>
-        </section>
+      <section id="addChemical" class="page">
+        <div class="page-head"><div><span class="eyebrow">ADMINISTRATION</span><h2 id="formTitle">Add Chemical</h2><p>Create a controlled chemical master record and attach its SDS.</p></div><button class="secondary-btn" data-page="inventory">← Back to inventory</button></div>
+        <form id="chemicalForm" class="panel form-panel">
+          <input id="chemicalId" type="hidden">
+          <div class="form-section"><div><h3>Identification</h3><p>Core chemical and supplier information.</p></div><div class="form-grid">
+            <label>Chemical name *<input id="chemicalName" required placeholder="e.g. Sodium Hydroxide"></label>
+            <label>CAS number<input id="casNumber" placeholder="e.g. 1310-73-2"></label>
+            <label>Supplier<input id="supplier" placeholder="Supplier / manufacturer"></label>
+            <label>Department *<select id="department" required></select></label>
+            <label>Hazard classification *<select id="hazard" required><option value="">Select hazard</option><option>Flammable</option><option>Corrosive</option><option>Toxic</option><option>Irritant</option><option>Oxidizing</option><option>Non-Hazardous</option></select></label>
+            <label>GHS label available<select id="ghs"><option value="Yes">Yes</option><option value="No">No</option></select></label>
+          </div></div>
+          <div class="form-section"><div><h3>Stock & storage</h3><p>Maintain the current physical stock position.</p></div><div class="form-grid">
+            <label>Current stock<input id="stock" type="number" min="0" step="0.01" value="0"></label>
+            <label>Unit<select id="unit"><option>Kg</option><option>Liter</option><option>Ton</option><option>Nos</option><option>Drum</option><option>Can</option></select></label>
+            <label>Storage location<input id="storage" placeholder="Chemical Store / Rack A1"></label>
+            <label>Purchase date<input id="purchaseDate" type="date"></label>
+            <label>Expiry / review date<input id="expiryDate" type="date"></label>
+            <label>Remarks<input id="remarks" placeholder="Optional notes"></label>
+          </div></div>
+          <div class="form-section"><div><h3>Safety Data Sheet</h3><p>Upload the latest approved SDS. PDF is recommended.</p></div><div class="sds-upload-box">
+            <div id="currentSds" class="current-sds hidden"></div>
+            <label class="file-drop" for="sdsFile"><span>↑</span><strong id="sdsFileLabel">Choose SDS file</strong><small>PDF, DOC, DOCX • max 10 MB</small><input id="sdsFile" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"></label>
+          </div></div>
+          <div class="form-actions"><button type="button" class="secondary-btn" id="clearForm">Clear</button><button type="submit" class="primary-btn" id="saveChemicalBtn">Save chemical</button></div>
+          <p id="chemicalFormError" class="form-error"></p>
+        </form>
+      </section>
 
-        <section id="addChemical" class="page admin-only-page">
-            <div class="panel">
-                <div class="panel-header"><h2>Add New Chemical</h2></div>
-                <form id="chemicalForm">
-                    <div class="form-grid">
-                        <div class="form-group"><label>Chemical Name *</label><input id="chemicalName" required placeholder="Example: Sodium Hydroxide"></div>
-                        <div class="form-group"><label>CAS Number</label><input id="casNumber" placeholder="Example: 1310-73-2"></div>
-                        <div class="form-group"><label>Supplier</label><input id="supplier" placeholder="Supplier name"></div>
-                        <div class="form-group"><label>Department *</label><select id="department" required></select></div>
-                        <div class="form-group"><label>Hazard Classification *</label><select id="hazard" required><option value="">Select Hazard</option><option>Flammable</option><option>Corrosive</option><option>Toxic</option><option>Irritant</option><option>Oxidizing</option><option>Non-Hazardous</option></select></div>
-                        <div class="form-group"><label>Current Stock</label><input type="number" id="stock" min="0" step="0.01" value="0"></div>
-                        <div class="form-group"><label>Unit</label><select id="unit"><option>Kg</option><option>Liter</option><option>Ton</option><option>Nos</option><option>Drum</option><option>Can</option></select></div>
-                        <div class="form-group"><label>Storage Location</label><input id="storage" placeholder="Example: Chemical Store - Rack A1"></div>
-                        <div class="form-group"><label>Purchase Date</label><input type="date" id="purchaseDate"></div>
-                        <div class="form-group"><label>Expiry / Review Date</label><input type="date" id="expiryDate"></div>
-                        <div class="form-group"><label>SDS Available?</label><select id="sds"><option>Yes</option><option>No</option></select></div>
-                        <div class="form-group"><label>GHS Label Available?</label><select id="ghs"><option>Yes</option><option>No</option></select></div>
-                    </div>
-                    <div class="form-group full"><label>Remarks</label><textarea id="remarks" placeholder="Enter additional information..."></textarea></div>
-                    <div class="form-buttons"><button type="reset" class="secondary-btn">Clear</button><button type="submit" class="primary-btn">💾 Save Chemical</button></div>
-                </form>
-            </div>
-        </section>
+      <section id="consumption" class="page">
+        <div class="page-head"><div><span class="eyebrow">TRANSACTION LOG</span><h2>Chemical Consumption</h2><p>Record usage and update stock atomically in Supabase.</p></div></div>
+        <form id="consumptionForm" class="panel form-panel compact">
+          <div class="form-grid">
+            <label>Chemical *<select id="consumptionChemical" required></select></label>
+            <label>Consumption date *<input id="consumptionDate" type="date" required></label>
+            <label>Department *<select id="consumptionDepartment" required></select></label>
+            <label>Quantity *<input id="consumptionQty" type="number" min="0.01" step="0.01" required></label>
+            <label>Unit<input id="consumptionUnit" readonly></label>
+            <label>Used by / employee<input id="consumptionUser" placeholder="Name / employee ID"></label>
+            <label class="full">Purpose / process<input id="consumptionPurpose" placeholder="e.g. Dyeing batch / ETP dosing"></label>
+            <label class="full">Remarks<input id="consumptionRemarks" placeholder="Optional remarks"></label>
+          </div>
+          <div class="form-actions"><button type="reset" class="secondary-btn">Clear</button><button type="submit" class="primary-btn">Save consumption</button></div>
+          <p id="consumptionError" class="form-error"></p>
+        </form>
+        <div class="panel no-pad"><div class="panel-head pad"><div><h3>Consumption history</h3><p>Latest recorded movements</p></div><button class="secondary-btn" id="exportConsumption">↓ CSV</button></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Chemical</th><th>Department</th><th>Qty</th><th>Used by</th><th>Purpose</th><th>Recorded by</th></tr></thead><tbody id="consumptionTable"></tbody></table></div></div>
+      </section>
 
-        <section id="consumption" class="page">
-            <div class="panel">
-                <div class="panel-header"><h2>Record Chemical Consumption</h2></div>
-                <form id="consumptionForm">
-                    <div class="form-grid">
-                        <div class="form-group"><label>Chemical *</label><select id="consumptionChemical" required></select></div>
-                        <div class="form-group"><label>Consumption Date *</label><input id="consumptionDate" type="date" required></div>
-                        <div class="form-group"><label>Department *</label><select id="consumptionDepartment" required></select></div>
-                        <div class="form-group"><label>Quantity *</label><input id="consumptionQty" type="number" min="0.01" step="0.01" required></div>
-                        <div class="form-group"><label>Unit</label><input id="consumptionUnit" readonly></div>
-                        <div class="form-group"><label>Used By / Employee</label><input id="consumptionUser" placeholder="Name / Employee ID"></div>
-                        <div class="form-group full"><label>Purpose / Process</label><input id="consumptionPurpose" placeholder="Example: Dyeing batch / ETP dosing"></div>
-                        <div class="form-group full"><label>Remarks</label><textarea id="consumptionRemarks"></textarea></div>
-                    </div>
-                    <div class="form-buttons"><button type="reset" class="secondary-btn">Clear</button><button type="submit" class="primary-btn">💾 Save Consumption</button></div>
-                </form>
-            </div>
-            <div class="panel">
-                <div class="panel-header"><h2>Consumption History</h2><button onclick="exportConsumptionCSV()" class="primary-btn">📥 Export CSV</button></div>
-                <div class="table-container"><table><thead><tr><th>Date</th><th>Chemical</th><th>Department</th><th>Quantity</th><th>Used By</th><th>Purpose</th><th>Recorded By</th></tr></thead><tbody id="consumptionTable"></tbody></table></div>
-            </div>
-        </section>
-
-        <section id="reports" class="page">
-            <div class="cards">
-                <div class="card"><div class="card-icon blue">📄</div><div><span>SDS Available</span><h2 id="sdsAvailable">0</h2></div></div>
-                <div class="card"><div class="card-icon red">❌</div><div><span>SDS Missing</span><h2 id="sdsMissing">0</h2></div></div>
-                <div class="card"><div class="card-icon orange">🏷️</div><div><span>GHS Missing</span><h2 id="ghsMissing">0</h2></div></div>
-            </div>
-            <div class="panel"><div class="panel-header"><h2>Inventory Report</h2><button onclick="exportCSV()" class="primary-btn">📥 Download CSV</button></div><p class="report-info">Reports are generated from the Supabase chemical inventory and consumption records.</p></div>
-        </section>
+      <section id="reports" class="page">
+        <div class="page-head"><div><span class="eyebrow">REPORTING</span><h2>Reports & Compliance</h2><p>Export live records for internal review and audit preparation.</p></div><div class="head-actions"><button class="secondary-btn" id="exportInventory">↓ Inventory CSV</button><button class="primary-btn" id="exportAll">↓ Compliance CSV</button></div></div>
+        <div class="report-grid">
+          <div class="report-card"><span class="report-mark green">✓</span><small>SDS available</small><strong id="sdsAvailable">0</strong><p>Controlled records with SDS</p></div>
+          <div class="report-card"><span class="report-mark red">!</span><small>SDS missing</small><strong id="sdsMissing">0</strong><p>Requires document follow-up</p></div>
+          <div class="report-card"><span class="report-mark amber">!</span><small>GHS missing</small><strong id="ghsMissing">0</strong><p>Label verification required</p></div>
+          <div class="report-card"><span class="report-mark blue">◷</span><small>Expiring soon</small><strong id="reportExpiry">0</strong><p>Within the next 30 days</p></div>
+        </div>
+        <div class="panel"><div class="panel-head"><div><h3>Audit checklist</h3><p>Use these controls during chemical management review.</p></div></div><div class="checklist">
+          <div><span>01</span><div><strong>SDS availability</strong><p>Each active chemical should have a current SDS attached.</p></div><b id="checkSds">0%</b></div>
+          <div><span>02</span><div><strong>GHS labelling</strong><p>Verify containers and storage areas are appropriately labelled.</p></div><b id="checkGhs">0%</b></div>
+          <div><span>03</span><div><strong>Expiry / review control</strong><p>Review chemicals approaching expiry or review date.</p></div><b id="checkExpiry">OK</b></div>
+          <div><span>04</span><div><strong>Stock traceability</strong><p>Consumption transactions should reconcile with current stock.</p></div><b id="checkStock">0%</b></div>
+        </div></div>
+      </section>
     </main>
-</div>
+  </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-config.js"></script>
-<script src="login-gate.js"></script>
-<script src="script.js"></script>
+  <div id="chemicalModal" class="modal hidden"><div class="modal-card large"><button class="modal-close" data-close="chemicalModal">×</button><div id="chemicalDetail"></div></div></div>
+  <div id="confirmModal" class="modal hidden"><div class="modal-card"><button class="modal-close" data-close="confirmModal">×</button><span class="eyebrow">CONFIRM ACTION</span><h3 id="confirmTitle">Delete chemical?</h3><p id="confirmText">This action cannot be undone.</p><div class="modal-actions"><button class="secondary-btn" data-close="confirmModal">Cancel</button><button class="danger-btn" id="confirmAction">Delete</button></div></div></div>
+  <script src="script.js"></script>
 </body>
 </html>
