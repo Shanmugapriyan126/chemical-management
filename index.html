@@ -18,7 +18,7 @@
 
     <div class="rkcms-login-layout">
         <div class="rkcms-login-brand-panel">
-            <div class="rkcms-brand-badge">RK INDUSTRIES</div>
+            <div class="rkcms-brand-badge">RK INDUSTRIES - IV</div>
             <div class="rkcms-brand-logo">
                 <img src="logo.png" alt="RK Industries">
             </div>
@@ -109,11 +109,11 @@
         </div>
 
         <nav>
-            <button class="nav-btn active" data-page="dashboard">📊 Dashboard</button>
-            <button class="nav-btn" data-page="inventory">🧪 Chemical Inventory</button>
-            <button class="nav-btn admin-only" data-page="addChemical">➕ Add Chemical</button>
-            <button class="nav-btn" data-page="consumption">📉 Consumption Log</button>
-            <button class="nav-btn" data-page="reports">📄 Reports</button>
+            <button class="nav-btn active" data-page="dashboard"><span class="nav-icon">⌂</span>Dashboard</button>
+            <button class="nav-btn" data-page="inventory"><span class="nav-icon">▦</span>Chemical Inventory</button>
+            <button class="nav-btn admin-only" data-page="addChemical"><span class="nav-icon">＋</span>Add Chemical</button>
+            <button class="nav-btn" data-page="consumption"><span class="nav-icon">↘</span>Consumption Log</button>
+            <button class="nav-btn" data-page="reports"><span class="nav-icon">▤</span>Reports</button>
         </nav>
 
         <div class="sidebar-footer">
@@ -122,17 +122,11 @@
         </div>
     </aside>
 
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
     <main class="main">
         <header class="topbar">
-            <div class="topbar-left">
-                <button type="button" class="mobile-menu-btn" id="mobileMenuBtn"
-                        aria-label="Open navigation" aria-expanded="false">☰</button>
-                <div>
-                    <h1 id="pageTitle">Dashboard</h1>
-                    <p>Chemical Management System</p>
-                </div>
+            <div>
+                <h1 id="pageTitle">Dashboard</h1>
+                <p>Chemical Management System</p>
             </div>
             <div class="topbar-actions">
                 <div class="user-info" id="userInfo">👤 User</div>
@@ -142,7 +136,7 @@
 
         <section id="dashboard" class="page active">
             <div class="cards">
-                <div class="card"><div class="card-icon blue">🧪</div><div><span>Total Chemicals</span><h2 id="totalChemicals">0</h2></div></div>
+                <div class="card"><div class="card-icon blue"><span class="symbol-icon">▦</span></div><div><span>Total Chemicals</span><h2 id="totalChemicals">0</h2></div></div>
                 <div class="card"><div class="card-icon green">📦</div><div><span>In Stock</span><h2 id="stockChemicals">0</h2></div></div>
                 <div class="card"><div class="card-icon orange">⚠️</div><div><span>Hazardous</span><h2 id="hazardousChemicals">0</h2></div></div>
                 <div class="card"><div class="card-icon red">📅</div><div><span>Expiry / Review Due</span><h2 id="expiryChemicals">0</h2></div></div>
@@ -156,10 +150,10 @@
                 <div class="panel">
                     <div class="panel-header"><h2>Quick Actions</h2></div>
                     <div class="quick-actions">
-                        <button class="admin-only" data-page="addChemical">➕ Add Chemical</button>
-                        <button data-page="inventory">🔍 Search Inventory</button>
-                        <button data-page="consumption">📉 Record Consumption</button>
-                        <button onclick="exportCSV()">📥 Export Inventory</button>
+                        <button class="admin-only" data-page="addChemical"><span class="nav-icon">＋</span>Add Chemical</button>
+                        <button data-page="inventory"><span class="quick-icon">⌕</span>Search Inventory</button>
+                        <button data-page="consumption"><span class="quick-icon">↘</span>Record Consumption</button>
+                        <button onclick="exportCSV()"><span class="quick-icon">⇩</span>Export Inventory</button>
                     </div>
                 </div>
             </div>
@@ -167,9 +161,9 @@
 
         <section id="inventory" class="page">
             <div class="panel">
-                <div class="panel-header"><h2>Chemical Inventory</h2><button onclick="exportCSV()" class="primary-btn">📥 Export CSV</button></div>
+                <div class="panel-header"><h2>Chemical Inventory</h2><button onclick="exportCSV()" class="primary-btn"><span class="quick-icon">⇩</span>Export CSV</button></div>
                 <div class="filters">
-                    <input type="text" id="searchChemical" placeholder="🔍 Search chemical...">
+                    <input type="text" id="searchChemical" placeholder="Search chemical, code, CAS or supplier...">
                     <select id="departmentFilter"><option value="">All Departments</option></select>
                     <select id="hazardFilter"><option value="">All Hazard Types</option><option>Flammable</option><option>Corrosive</option><option>Toxic</option><option>Irritant</option><option>Oxidizing</option><option>Non-Hazardous</option></select>
                 </div>
@@ -219,18 +213,18 @@
                 </form>
             </div>
             <div class="panel">
-                <div class="panel-header"><h2>Consumption History</h2><button onclick="exportConsumptionCSV()" class="primary-btn">📥 Export CSV</button></div>
+                <div class="panel-header"><h2>Consumption History</h2><button onclick="exportConsumptionCSV()" class="primary-btn"><span class="quick-icon">⇩</span>Export CSV</button></div>
                 <div class="table-container"><table><thead><tr><th>Date</th><th>Chemical</th><th>Department</th><th>Quantity</th><th>Used By</th><th>Purpose</th><th>Recorded By</th></tr></thead><tbody id="consumptionTable"></tbody></table></div>
             </div>
         </section>
 
         <section id="reports" class="page">
             <div class="cards">
-                <div class="card"><div class="card-icon blue">📄</div><div><span>SDS Available</span><h2 id="sdsAvailable">0</h2></div></div>
+                <div class="card"><div class="card-icon blue"><span class="symbol-icon">▤</span></div><div><span>SDS Available</span><h2 id="sdsAvailable">0</h2></div></div>
                 <div class="card"><div class="card-icon red">❌</div><div><span>SDS Missing</span><h2 id="sdsMissing">0</h2></div></div>
                 <div class="card"><div class="card-icon orange">🏷️</div><div><span>GHS Missing</span><h2 id="ghsMissing">0</h2></div></div>
             </div>
-            <div class="panel"><div class="panel-header"><h2>Inventory Report</h2><button onclick="exportCSV()" class="primary-btn">📥 Download CSV</button></div><p class="report-info">Reports are generated from the Supabase chemical inventory and consumption records.</p></div>
+            <div class="panel"><div class="panel-header"><h2>Inventory Report</h2><button onclick="exportCSV()" class="primary-btn"><span class="quick-icon">⇩</span>Download CSV</button></div><p class="report-info">Reports are generated from the Supabase chemical inventory and consumption records.</p></div>
         </section>
     </main>
 </div>
