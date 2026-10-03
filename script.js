@@ -1,1068 +1,280 @@
-/* RK-CMS - Supabase version
-   Updated to match the current Supabase schema:
-   chemicals:
-     id, chemical_code, chemical_name, cas_no, manufacturer, supplier,
-     department, process, hazard, stock, unit, storage_location,
-     purchase_date, expiry_date, sds_available, ghs_available,
-     remarks, created_by, created_at, updated_at
+/* RK-CMS – Supabase version (matches schema: profiles, chemicals, consumption_logs, stock_transactions)
+   RPCs: record_chemical_consumption, record_stock_transaction · Storage bucket: sds  (see supabase-setup.sql) */
+const db = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+const I = n => `<svg class="i"><use href="#i-${n}"/></svg>`;
+const $ = id => document.getElementById(id);
+const DEPTS = ["Washing","Dyeing","Printing","Maintenance","ETP","Boiler","Housekeeping","Fabric Washing","Yarn Dyeing","Embroidery","Cutting","Sewing","Packing","Other"];
+const HAZ = ["Flammable","Corrosive","Toxic","Irritant","Oxidizing","Non-Hazardous"];
+const UNITS = ["Kg","Litre","Gram","ML","Ton","Drum","Can","Nos"], YN = ["Yes","No"];
+const F = [ // key, label, type, options
+  ["chemical_name","Chemical name *","text"],["cas_no","CAS number","text"],["manufacturer","Manufacturer","text"],["supplier","Supplier","text"],
+  ["department","Department *","select",["",...DEPTS]],["process","Process","text"],["hazard","Hazard class *","select",["",...HAZ]],
+  ["stock","Opening stock","number"],["unit","Unit","select",UNITS],["storage_location","Storage location","text"],
+  ["purchase_date","Purchase date","date"],["expiry_date","Expiry / review date","date"],
+  ["sds_available","SDS available?","select",YN],["ghs_available","GHS label available?","select",YN]];
+let chems = [], logs = [], txs = [], names = {}, me = null, profile = null;
 
-   consumption_logs:
-     id, chemical_id, consumption_date, department, quantity, unit,
-     used_by, purpose, remarks, recorded_by, created_at
+const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const num = v => Number(v || 0), fmt = v => num(v).toLocaleString("en-IN", {maximumFractionDigits: 2});
+const today = () => new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
+const role = () => String(profile?.role || "").toUpperCase();
+const admin = () => role() === "ADMIN", canRec = () => role() !== "VIEWER";
+const who = id => esc(names[id] || "-");
+const act = () => chems.filter(c => c.active !== false);
+const fdate = v => v ? new Date(v + "T00:00").toLocaleDateString("en-GB", {day: "2-digit", month: "short", year: "numeric"}) : "-";
+const fdt = v => v ? new Date(v).toLocaleString("en-GB", {day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit"}) : "-";
+function toast(msg, bad) { const t = $("toast"); t.textContent = msg; t.className = "toast" + (bad ? " bad" : ""); clearTimeout(t._t); t._t = setTimeout(() => t.classList.add("hidden"), 3800); }
+function modal(html) { $("mbody").innerHTML = html; $("modal").classList.remove("hidden"); }
+function closeModal() { $("modal").classList.add("hidden"); }
+$("modal").onclick = e => { if (e.target.id === "modal") closeModal(); };
+document.onkeydown = e => { if (e.key === "Escape") closeModal(); };
 
-   IMPORTANT:
-   - This file expects window.SUPABASE_URL and window.SUPABASE_ANON_KEY.
-   - Consumption uses the Supabase RPC record_chemical_consumption.
-*/
-
-const { createClient } = window.supabase;
-const db = createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
-
-let chemicals = [];
-let consumptionLogs = [];
-let currentUser = null;
-let currentProfile = null;
-
-const departments = [
-    "Washing","Dyeing","Printing","Maintenance","ETP","Boiler",
-    "Housekeeping","Fabric Washing","Yarn Dyeing","Embroidery",
-    "Cutting","Sewing","Packing","Other"
-];
-
-function escapeHTML(value) {
-    return String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+const daysLeft = c => c.expiry_date ? Math.round((new Date(c.expiry_date + "T00:00") - new Date().setHours(0,0,0,0)) / 864e5) : null;
+const hazTag = h => `<span class="tag ${h === "Non-Hazardous" ? "grn" : ["Flammable","Corrosive"].includes(h) ? "red" : "amb"}">${esc(h || "-")}</span>`;
+function issues(c) {
+  const d = daysLeft(c), o = [];
+  if (d !== null && d < 0) o.push('<span class="tag red">Expired</span>');
+  else if (d !== null && d <= 30) o.push(`<span class="tag amb">Review in ${d}d</span>`);
+  if (!c.sds_available) o.push('<span class="tag red">No SDS</span>');
+  if (!c.ghs_available) o.push('<span class="tag amb">No GHS label</span>');
+  return o;
 }
 
-function fillDepartmentSelects() {
-    const selects = [
-        document.getElementById("department"),
-        document.getElementById("consumptionDepartment")
-    ];
+/* ---------- navigation ---------- */
+const TITLES = {dashboard:"Dashboard",inventory:"Chemical Inventory",addChemical:"Add Chemical",stock:"Stock Ledger",consumption:"Consumption Log",reports:"Reports"};
+function show(id) {
+  if (id === "addChemical" && !admin()) id = "dashboard";
+  document.querySelectorAll(".page").forEach(p => p.classList.toggle("active", p.id === id));
+  document.querySelectorAll(".nav").forEach(b => b.classList.toggle("active", b.dataset.page === id));
+  $("pageTitle").textContent = TITLES[id]; render();
+}
+document.addEventListener("click", e => { const b = e.target.closest("[data-page]"); if (b) show(b.dataset.page); });
 
-    selects.forEach(select => {
-        if (!select) return;
-        select.innerHTML =
-            '<option value="">Select Department</option>' +
-            departments.map(d => `<option value="${escapeHTML(d)}">${escapeHTML(d)}</option>`).join("");
-    });
+/* ---------- form helpers (Add + Edit) ---------- */
+function fieldsHTML(p, c = {}, edit = false) {
+  return F.filter(f => !(edit && f[0] === "stock")).map(([k, l, t, o]) => {
+    let v = c[k] ?? (k === "unit" ? "Kg" : t === "number" ? 0 : "");
+    if (o === YN) v = c[k] === undefined ? "Yes" : c[k] ? "Yes" : "No";
+    const i = t === "select"
+      ? `<select id="${p}${k}">${o.map(x => `<option value="${esc(x)}" ${x === v ? "selected" : ""}>${esc(x || "Select")}</option>`).join("")}</select>`
+      : `<input id="${p}${k}" type="${t}" ${t === "number" ? 'min="0" step="0.01"' : ""} value="${esc(v)}">`;
+    return `<div><label>${l}</label>${i}</div>`;
+  }).join("") + `<div class="full"><label>Remarks</label><textarea id="${p}remarks">${esc(c.remarks)}</textarea></div>`;
+}
+function collect(p, edit = false) {
+  const o = {};
+  F.forEach(([k, , t, opt]) => {
+    const el = $(p + k); if (!el || (edit && k === "stock")) return;
+    const v = el.value.trim();
+    o[k] = opt === YN ? v === "Yes" : t === "number" ? num(v) : v || null;
+  });
+  o.remarks = $(p + "remarks").value.trim() || null;
+  return o;
+}
+const nextCode = () => "CHM" + String(Math.max(0, ...chems.map(c => +(String(c.chemical_code).match(/(\d+)$/)?.[1] || 0))) + 1).padStart(5, "0");
 
-    const filter = document.getElementById("departmentFilter");
-    if (filter) {
-        filter.innerHTML =
-            '<option value="">All Departments</option>' +
-            departments.map(d => `<option value="${escapeHTML(d)}">${escapeHTML(d)}</option>`).join("");
-    }
+/* ---------- data ---------- */
+async function load() {
+  const [a, b, t, p] = await Promise.all([
+    db.from("chemicals").select("*").order("created_at", {ascending: false}),
+    db.from("consumption_logs").select("*, chemicals(chemical_code,chemical_name)").order("consumption_date", {ascending: false}).order("created_at", {ascending: false}),
+    db.from("stock_transactions").select("*, chemicals(chemical_code,chemical_name,unit)").order("created_at", {ascending: false}).limit(300),
+    db.from("profiles").select("id,full_name")]);
+  if (a.error) throw a.error; if (b.error) throw b.error;
+  chems = a.data || []; logs = b.data || []; txs = t.data || [];
+  names = Object.fromEntries((p.data || []).map(x => [x.id, x.full_name]));
+  render();
+}
+const rowsOr = (arr, cols, fn) => arr.length ? arr.map(fn).join("") : `<tr><td colspan="${cols}" class="empty">No records found</td></tr>`;
+function render() {
+  const page = document.querySelector(".page.active")?.id;
+  ({dashboard, inventory, stock, consumption, reports}[page] || (() => {}))();
+}
+const card = (l, v, c = "") => `<div class="card ${c}"><span>${l}</span><b>${v}</b></div>`;
+const chemOpts = (first) => `<option value="">${first}</option>` + act().map(c => `<option value="${c.id}">${esc(c.chemical_code)} – ${esc(c.chemical_name)} (${fmt(c.stock)} ${esc(c.unit)})</option>`).join("");
+
+function dashboard() {
+  const a = act(), due = a.filter(c => { const d = daysLeft(c); return d !== null && d <= 30; }).length;
+  $("kpis").innerHTML = card("Total chemicals", a.length) + card("In stock", a.filter(c => num(c.stock) > 0).length, "grn") +
+    card("Hazardous", a.filter(c => c.hazard && c.hazard !== "Non-Hazardous").length, "amb") + card("Expiry / review due", due, "red") + card("SDS missing", a.filter(c => !c.sds_available).length, "red");
+  $("alertTable").innerHTML = rowsOr(a.filter(c => issues(c).length).slice(0, 8), 3, c => `<tr><td class="code">${esc(c.chemical_code)}</td><td>${esc(c.chemical_name)}</td><td>${issues(c).join(" ")}</td></tr>`);
+  $("recentTable").innerHTML = rowsOr(a.slice(0, 5), 4, c => `<tr><td class="code">${esc(c.chemical_code)}</td><td>${esc(c.chemical_name)}</td><td>${fmt(c.stock)} ${esc(c.unit)}</td><td>${hazTag(c.hazard)}</td></tr>`);
 }
 
-function showPage(pageId) {
-    document.querySelectorAll(".page").forEach(page => page.classList.remove("active"));
+function filtered() {
+  const q = $("search").value.toLowerCase(), d = $("deptFilter").value, h = $("hazFilter").value, s = $("statFilter").value;
+  return chems.filter(c => `${c.chemical_name} ${c.chemical_code} ${c.cas_no} ${c.supplier}`.toLowerCase().includes(q) && (!d || c.department === d) && (!h || c.hazard === h) &&
+    (s === "all" || (s === "active") === (c.active !== false)));
+}
+function inventory() {
+  $("invTable").innerHTML = rowsOr(filtered(), 9, c => {
+    const d = daysLeft(c), on = c.active !== false;
+    return `<tr style="${on ? "" : "opacity:.55"}"><td class="code">${esc(c.chemical_code)}</td><td><b>${esc(c.chemical_name)}</b> ${on ? "" : '<span class="tag">Inactive</span>'}<br><small class="muted">${esc(c.manufacturer || c.supplier || "")}</small></td>
+    <td>${esc(c.cas_no || "-")}</td><td>${esc(c.department || "-")}</td><td>${hazTag(c.hazard)}</td>
+    <td><b>${fmt(c.stock)}</b> ${esc(c.unit)}</td><td>${esc(c.storage_location || "-")}</td>
+    <td>${fdate(c.expiry_date)} ${d !== null && d < 0 ? '<span class="tag red">Expired</span>' : d !== null && d <= 30 ? '<span class="tag amb">Due</span>' : ""}</td>
+    <td><div class="acts"><button class="ic" title="View" onclick="viewChem('${c.id}')">${I("eye")}</button>
+    ${admin() ? (on ? `<button class="ic" title="Edit" onclick="editChem('${c.id}')">${I("edit")}</button><button class="ic del" title="Deactivate" onclick="setActive('${c.id}',false)">${I("off")}</button>`
+      : `<button class="ic" title="Restore" onclick="setActive('${c.id}',true)">${I("undo")}</button>`) : ""}</div></td></tr>`;
+  });
+}
+["search","deptFilter","hazFilter","statFilter"].forEach(id => $(id).addEventListener("input", inventory));
 
-    const page = document.getElementById(pageId);
-    if (!page) return;
-
-    page.classList.add("active");
-
-    document.querySelectorAll(".nav-btn").forEach(btn => {
-        btn.classList.toggle("active", btn.dataset.page === pageId);
-    });
-
-    const titles = {
-        dashboard: "Dashboard",
-        inventory: "Chemical Inventory",
-        addChemical: "Add Chemical",
-        consumption: "Consumption Log",
-        reports: "Reports"
-    };
-
-    const pageTitle = document.getElementById("pageTitle");
-    if (pageTitle) pageTitle.innerText = titles[pageId] || "RK-CMS";
-
-    if (pageId === "dashboard") updateDashboard();
-    if (pageId === "inventory") renderInventory();
-    if (pageId === "consumption") {
-        loadConsumption();
-        populateConsumptionChemicals();
+function viewChem(id) {
+  const c = chems.find(x => x.id === id), kv = (l, v) => `<div><span>${l}</span><b>${v}</b></div>`;
+  modal(`<h2>${esc(c.chemical_name)} <span class="code">${esc(c.chemical_code)}</span></h2><div class="kv">
+    ${kv("CAS", esc(c.cas_no || "-"))}${kv("Manufacturer", esc(c.manufacturer || "-"))}${kv("Supplier", esc(c.supplier || "-"))}${kv("Department", esc(c.department || "-"))}
+    ${kv("Process", esc(c.process || "-"))}${kv("Hazard", hazTag(c.hazard))}${kv("Stock", fmt(c.stock) + " " + esc(c.unit))}${kv("Storage", esc(c.storage_location || "-"))}
+    ${kv("Purchased", fdate(c.purchase_date))}${kv("Expiry / review", fdate(c.expiry_date))}${kv("GHS label", c.ghs_available ? "Available" : "Missing")}
+    ${kv("SDS", c.sds_available ? "Available" : "Missing")}${kv("Last updated", fdt(c.updated_at) + "<br><small>" + who(c.updated_by) + "</small>")}</div>
+    <p><span class="muted">Remarks</span><br>${esc(c.remarks || "None")}</p>
+    <div class="row">${c.sds_path ? `<button class="ghost" onclick="openSDS('${esc(c.sds_path)}')">${I("file")} Open SDS (${esc(c.sds_file_name || "file")})</button>` : ""}<button class="btn" onclick="closeModal()">Close</button></div>`);
+}
+async function openSDS(path) {
+  const {data, error} = await db.storage.from("sds").createSignedUrl(path, 300);
+  if (error) return toast(error.message, 1);
+  window.open(data.signedUrl, "_blank");
+}
+function editChem(id) {
+  if (!admin()) return;
+  const c = chems.find(x => x.id === id);
+  modal(`<h2>Edit ${esc(c.chemical_name)}</h2><p class="muted">Stock changes only through Consumption or the Stock Ledger, so every movement is recorded.</p>
+    <form id="editForm"><div class="grid">${fieldsHTML("e_", c, true)}
+    <div class="full"><label>SDS file (PDF / image)</label><input type="file" id="e_sds" accept=".pdf,image/*">${c.sds_file_name ? `<small class="muted">Current: ${esc(c.sds_file_name)}</small>` : ""}</div></div>
+    <div class="row"><button type="button" class="ghost" onclick="closeModal()">Cancel</button><button class="btn">Save changes</button></div></form>`);
+  $("editForm").onsubmit = async e => {
+    e.preventDefault(); const p = collect("e_", true);
+    if (!p.chemical_name || !p.department || !p.hazard) return toast("Name, department and hazard are required", 1);
+    const f = $("e_sds").files[0];
+    if (f) {
+      const path = `${id}/${Date.now()}_${f.name.replace(/[^\w.\-]/g, "_")}`;
+      const up = await db.storage.from("sds").upload(path, f);
+      if (up.error) return toast("SDS upload failed: " + up.error.message, 1);
+      Object.assign(p, {sds_path: path, sds_file_name: f.name, sds_uploaded_at: new Date().toISOString(), sds_available: true});
     }
-    if (pageId === "reports") updateReports();
+    Object.assign(p, {updated_at: new Date().toISOString(), updated_by: me.id});
+    const {data, error} = await db.from("chemicals").update(p).eq("id", id).select("id");
+    if (error || !data?.length) return toast(error?.message || "Not updated – check Supabase UPDATE policy", 1);
+    closeModal(); toast("Chemical updated"); await load();
+  };
+}
+function setActive(id, on) {
+  const c = chems.find(x => x.id === id);
+  modal(`<h2>${on ? "Restore" : "Deactivate"} ${esc(c.chemical_name)}?</h2>
+    <p>${on ? "It will appear again in Inventory, Consumption and Stock forms." : `<b>${esc(c.chemical_code)}</b> will be hidden from forms and counts. Its consumption and stock history is kept.`}</p>
+    <div class="row"><button class="ghost" onclick="closeModal()">Cancel</button><button class="btn ${on ? "" : "red"}" id="okAct">${on ? "Restore" : "Deactivate"}</button></div>`);
+  $("okAct").onclick = async () => {
+    const {error} = await db.from("chemicals").update({active: on, updated_at: new Date().toISOString(), updated_by: me.id}).eq("id", id);
+    if (error) return toast(error.message, 1);
+    closeModal(); toast(on ? "Chemical restored" : "Chemical deactivated"); await load();
+  };
 }
 
-document.addEventListener("click", event => {
-    const button = event.target.closest("[data-page]");
-    if (button) showPage(button.dataset.page);
-});
+/* ---------- add chemical ---------- */
+$("addForm").onsubmit = async e => {
+  e.preventDefault(); if (!admin()) return toast("Admin access required", 1);
+  const p = collect("a_");
+  if (!p.chemical_name || !p.department || !p.hazard) return toast("Name, department and hazard are required", 1);
+  Object.assign(p, {chemical_code: nextCode(), created_by: me.id, updated_by: me.id, active: true});
+  const {data, error} = await db.from("chemicals").insert(p).select("id").single();
+  if (error) return toast(error.message, 1);
+  if (p.stock > 0) await db.from("stock_transactions").insert({chemical_id: data.id, transaction_type: "OPENING", quantity: p.stock, previous_stock: 0, new_stock: p.stock, remarks: "Opening stock", entered_by: me.id});
+  toast("Added " + p.chemical_code); e.target.reset(); await load(); show("inventory");
+};
 
-/* ---------------- PROFILE / AUTH ---------------- */
+/* ---------- stock ledger ---------- */
+const TT = {RECEIPT: "grn", OPENING: "", CONSUMPTION: "amb", ADJUSTMENT: "red"};
+function stock() {
+  const keep = $("stChem").value; $("stChem").innerHTML = chemOpts("Select chemical"); $("stChem").value = keep;
+  $("stTable").innerHTML = rowsOr(txs, 7, t => {
+    const q = t.transaction_type === "CONSUMPTION" ? -Math.abs(num(t.quantity)) : num(t.quantity);
+    return `<tr><td>${fdt(t.created_at)}</td><td>${esc(t.chemicals?.chemical_code || "")} ${esc(t.chemicals?.chemical_name || "")}</td><td><span class="tag ${TT[t.transaction_type] ?? ""}">${esc(t.transaction_type)}</span></td>
+    <td><b>${q > 0 ? "+" : ""}${fmt(q)}</b> ${esc(t.chemicals?.unit || "")}</td><td>${fmt(t.previous_stock)} → ${fmt(t.new_stock)}</td><td>${who(t.entered_by)}</td><td>${esc(t.remarks || "-")}</td></tr>`;
+  });
+}
+$("stType").onchange = () => { $("stQtyLabel").textContent = $("stType").value === "RECEIPT" ? "Quantity received *" : "Physical count (new stock) *"; };
+$("stForm").onsubmit = async e => {
+  e.preventDefault(); if (!admin()) return toast("Admin access required", 1);
+  const type = $("stType").value, q = num($("stQty").value);
+  if (!$("stChem").value) return toast("Select a chemical", 1);
+  if (type === "RECEIPT" && q <= 0) return toast("Enter a valid quantity", 1);
+  const {error} = await db.rpc("record_stock_transaction", {p_chemical_id: $("stChem").value, p_type: type, p_quantity: q, p_remarks: $("stRemarks").value.trim() || null});
+  if (error) return toast(error.message, 1);
+  toast("Stock entry saved"); e.target.reset(); await load();
+};
 
-async function loadProfile() {
-    if (!currentUser?.id) {
-        throw new Error("No authenticated user found.");
-    }
+/* ---------- consumption ---------- */
+function consumption() {
+  const keep = $("useChem").value; $("useChem").innerHTML = chemOpts("Select chemical"); $("useChem").value = keep;
+  $("useTable").innerHTML = rowsOr(logs, 7, l => `<tr><td>${fdate(l.consumption_date)}</td><td>${esc(l.chemicals?.chemical_code || "")} ${esc(l.chemicals?.chemical_name || "")}</td><td>${esc(l.department)}</td>
+    <td>${fmt(l.quantity)} ${esc(l.unit)}</td><td>${esc(l.used_by || "-")}</td><td>${esc(l.purpose || "-")}</td><td>${who(l.recorded_by)}</td></tr>`);
+}
+$("useChem").onchange = () => { $("useUnit").value = chems.find(c => c.id === $("useChem").value)?.unit || ""; };
+$("useForm").onsubmit = async e => {
+  e.preventDefault(); if (!canRec()) return toast("Your role cannot record consumption", 1);
+  const c = chems.find(x => x.id === $("useChem").value), q = num($("useQty").value);
+  if (!c) return toast("Select a chemical", 1);
+  if (q <= 0) return toast("Enter a valid quantity", 1);
+  if (q > num(c.stock)) return toast(`Insufficient stock. Available: ${fmt(c.stock)} ${c.unit}`, 1);
+  const {error} = await db.rpc("record_chemical_consumption", {p_chemical_id: c.id, p_consumption_date: $("useDate").value, p_department: $("useDept").value,
+    p_quantity: q, p_unit: c.unit, p_used_by: $("useUser").value.trim() || null, p_purpose: $("usePurpose").value.trim() || null, p_remarks: $("useRemarks").value.trim() || null});
+  if (error) return toast(error.message, 1);
+  toast("Consumption recorded"); e.target.reset(); $("useDate").value = today(); $("useUnit").value = ""; await load();
+};
 
-    const { data, error } = await db
-        .from("profiles")
-        .select("*")
-        .eq("id", currentUser.id)
-        .single();
-
-    if (error || !data) {
-        throw new Error(
-            "No RK-CMS profile found for this login. Ask the administrator to create your profile."
-        );
-    }
-
-    if (String(data.status ?? "active").toLowerCase() !== "active") {
-        throw new Error("Your RK-CMS account is inactive.");
-    }
-
-    currentProfile = data;
-
-    const role = String(data.role || "user").toLowerCase();
-
-    const userInfo = document.getElementById("userInfo");
-    if (userInfo) {
-        userInfo.innerText =
-            `👤 ${data.full_name || currentUser.email} • ${role.toUpperCase()}`;
-    }
-
-    document.querySelectorAll(".admin-only").forEach(element => {
-        element.classList.toggle("hidden", role !== "admin");
-    });
-
-    document.querySelectorAll(".admin-only-page").forEach(element => {
-        element.classList.toggle("hidden", role !== "admin");
-    });
+/* ---------- reports & export ---------- */
+const inRange = d => (!$("rFrom").value || d >= $("rFrom").value) && (!$("rTo").value || d <= $("rTo").value);
+function reports() {
+  const a = act();
+  $("repKpis").innerHTML = card("SDS available", a.filter(c => c.sds_available).length, "grn") + card("SDS missing", a.filter(c => !c.sds_available).length, "red") +
+    card("GHS label missing", a.filter(c => !c.ghs_available).length, "amb") + card("Expired", a.filter(c => c.expiry_date && daysLeft(c) < 0).length, "red");
+  const g = {}; logs.filter(l => inRange(l.consumption_date)).forEach(l => { const k = `${l.department}|${l.unit}`; (g[k] ||= {q: 0, n: 0}); g[k].q += num(l.quantity); g[k].n++; });
+  $("deptTable").innerHTML = rowsOr(Object.entries(g).sort((x, y) => y[1].q - x[1].q), 3, ([k, v]) => { const [d, u] = k.split("|"); return `<tr><td>${esc(d)}</td><td>${fmt(v.q)} ${esc(u)}</td><td>${v.n}</td></tr>`; });
+}
+["rFrom","rTo"].forEach(id => $(id).addEventListener("input", reports));
+function csv(name, head, rows) {
+  const t = [head, ...rows].map(r => r.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["\ufeff" + t], {type: "text/csv;charset=utf-8"}));
+  a.download = name + "_" + today() + ".csv"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+function exportInventory() {
+  csv("Chemical_Inventory", ["ID","Name","CAS","Manufacturer","Supplier","Department","Process","Hazard","Stock","Unit","Storage","Purchase","Expiry","SDS","GHS","Status","Remarks"],
+    ($("inventory").classList.contains("active") ? filtered() : act()).map(c => [c.chemical_code,c.chemical_name,c.cas_no,c.manufacturer,c.supplier,c.department,c.process,c.hazard,c.stock,c.unit,c.storage_location,c.purchase_date,c.expiry_date,c.sds_available ? "Yes" : "No",c.ghs_available ? "Yes" : "No",c.active !== false ? "Active" : "Inactive",c.remarks]));
+}
+function exportUsage() {
+  csv("Chemical_Consumption", ["Date","Chemical ID","Chemical","Department","Quantity","Unit","Used by","Purpose","Remarks","Recorded by"],
+    logs.filter(l => inRange(l.consumption_date)).map(l => [l.consumption_date,l.chemicals?.chemical_code,l.chemicals?.chemical_name,l.department,l.quantity,l.unit,l.used_by,l.purpose,l.remarks,names[l.recorded_by]]));
 }
 
-function isAdmin() {
-    return String(currentProfile?.role || "").toLowerCase() === "admin";
+/* ---------- auth & start ---------- */
+$("togglePw").onclick = () => { const i = $("loginPassword"), s = i.type === "password"; i.type = s ? "text" : "password"; $("togglePw").textContent = s ? "Hide" : "Show"; };
+$("loginForm").onsubmit = async e => {
+  e.preventDefault(); $("loginError").textContent = ""; $("loginBtn").disabled = true; $("loginBtn").textContent = "Signing in…";
+  const {data, error} = await db.auth.signInWithPassword({email: $("loginEmail").value.trim(), password: $("loginPassword").value});
+  if (error) $("loginError").textContent = error.message; else { me = data.user; await start(); }
+  $("loginBtn").disabled = false; $("loginBtn").textContent = "Sign in";
+};
+$("logoutBtn").onclick = async () => { await db.auth.signOut(); location.reload(); };
+
+async function start() {
+  try {
+    const {data, error} = await db.from("profiles").select("*").eq("id", me.id).single();
+    if (error || !data) throw new Error("No RK-CMS profile for this login. Ask the administrator to create it.");
+    if (String(data.status ?? "ACTIVE").toUpperCase() !== "ACTIVE") throw new Error("Your RK-CMS account is inactive.");
+    profile = data; document.body.classList.toggle("is-admin", admin()); document.body.classList.toggle("can-rec", canRec());
+    $("userInfo").textContent = `${data.full_name || me.email} · ${role()}`;
+    await load();
+    $("loginPage").classList.add("hidden"); $("appShell").classList.remove("hidden"); show("dashboard");
+  } catch (err) {
+    $("loginError").textContent = err.message || "Unable to load your account."; await db.auth.signOut(); me = profile = null;
+    $("loginPage").classList.remove("hidden"); $("appShell").classList.add("hidden");
+  }
 }
-
-/* ---------------- CHEMICALS ---------------- */
-
-async function loadChemicals() {
-    const { data, error } = await db
-        .from("chemicals")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-    if (error) throw error;
-
-    chemicals = data || [];
-
-    updateDashboard();
-    renderInventory();
-    populateConsumptionChemicals();
-    updateReports();
-}
-
-function getNextChemicalCode() {
-    let maxNumber = 0;
-
-    chemicals.forEach(chemical => {
-        const match = String(chemical.chemical_code || "").match(/(\d+)$/);
-        if (match) maxNumber = Math.max(maxNumber, Number(match[1]));
-    });
-
-    return "CHM" + String(maxNumber + 1).padStart(5, "0");
-}
-
-document.getElementById("chemicalForm")?.addEventListener("submit", async event => {
-    event.preventDefault();
-
-    if (!isAdmin()) {
-        alert("Admin access required.");
-        return;
-    }
-
-    const chemicalCode = getNextChemicalCode();
-
-    const payload = {
-        chemical_code: chemicalCode,
-        chemical_name: document.getElementById("chemicalName")?.value.trim(),
-        cas_no: document.getElementById("casNumber")?.value.trim() || null,
-        manufacturer: document.getElementById("manufacturer")?.value.trim() || null,
-        supplier: document.getElementById("supplier")?.value.trim() || null,
-        department: document.getElementById("department")?.value || null,
-        process: document.getElementById("process")?.value.trim() || null,
-        hazard: document.getElementById("hazard")?.value || null,
-        stock: Number(document.getElementById("stock")?.value) || 0,
-        unit: document.getElementById("unit")?.value || null,
-        storage_location: document.getElementById("storage")?.value.trim() || null,
-        purchase_date: document.getElementById("purchaseDate")?.value || null,
-        expiry_date: document.getElementById("expiryDate")?.value || null,
-        sds_available: document.getElementById("sds")?.value === "Yes",
-        ghs_available: document.getElementById("ghs")?.value === "Yes",
-        remarks: document.getElementById("remarks")?.value.trim() || null,
-        created_by: currentUser.id
-    };
-
-    if (!payload.chemical_name) {
-        alert("Chemical name is required.");
-        return;
-    }
-
-    const { error } = await db.from("chemicals").insert(payload);
-
-    if (error) {
-        alert(error.message);
-        return;
-    }
-
-    alert(`Chemical added successfully.\nChemical ID: ${chemicalCode}`);
-
-    event.target.reset();
-
-    await loadChemicals();
-    showPage("inventory");
-});
-
-/* ---------------- CONSUMPTION ---------------- */
-
-async function loadConsumption() {
-    const { data, error } = await db
-        .from("consumption_logs")
-        .select(`
-            *,
-            chemicals (
-                chemical_code,
-                chemical_name
-            )
-        `)
-        .order("consumption_date", { ascending: false })
-        .order("created_at", { ascending: false });
-
-    if (error) {
-        console.error(error);
-        return;
-    }
-
-    consumptionLogs = data || [];
-
-    const table = document.getElementById("consumptionTable");
-    if (!table) return;
-
-    table.innerHTML = consumptionLogs.length
-        ? consumptionLogs.map(log => `
-            <tr>
-                <td>${escapeHTML(log.consumption_date)}</td>
-                <td>
-                    ${escapeHTML(log.chemicals?.chemical_code || "")}
-                    -
-                    ${escapeHTML(log.chemicals?.chemical_name || "")}
-                </td>
-                <td>${escapeHTML(log.department)}</td>
-                <td>${Number(log.quantity || 0).toFixed(2)} ${escapeHTML(log.unit)}</td>
-                <td>${escapeHTML(log.used_by || "-")}</td>
-                <td>${escapeHTML(log.purpose || "-")}</td>
-                <td>${escapeHTML(log.recorded_by || "")}</td>
-            </tr>
-        `).join("")
-        : '<tr><td colspan="7" style="text-align:center;padding:30px">No consumption records found.</td></tr>';
-}
-
-function populateConsumptionChemicals() {
-    const select = document.getElementById("consumptionChemical");
-    if (!select) return;
-
-    select.innerHTML =
-        '<option value="">Select Chemical</option>' +
-        chemicals.map(chemical => `
-            <option value="${escapeHTML(chemical.id)}">
-                ${escapeHTML(chemical.chemical_code)}
-                -
-                ${escapeHTML(chemical.chemical_name)}
-                (Stock: ${Number(chemical.stock || 0).toFixed(2)} ${escapeHTML(chemical.unit || "")})
-            </option>
-        `).join("");
-}
-
-document.getElementById("consumptionChemical")?.addEventListener("change", event => {
-    const chemical = chemicals.find(
-        item => String(item.id) === String(event.target.value)
-    );
-
-    const unit = document.getElementById("consumptionUnit");
-    if (unit) unit.value = chemical?.unit || "";
-});
-
-document.getElementById("consumptionForm")?.addEventListener("submit", async event => {
-    event.preventDefault();
-
-    const chemical = chemicals.find(
-        item =>
-            String(item.id) ===
-            String(document.getElementById("consumptionChemical")?.value)
-    );
-
-    const quantity = Number(
-        document.getElementById("consumptionQty")?.value
-    );
-
-    const consumptionDate =
-        document.getElementById("consumptionDate")?.value;
-
-    const department =
-        document.getElementById("consumptionDepartment")?.value;
-
-    if (!chemical) {
-        alert("Select a chemical.");
-        return;
-    }
-
-    if (!consumptionDate) {
-        alert("Select consumption date.");
-        return;
-    }
-
-    if (!department) {
-        alert("Select department.");
-        return;
-    }
-
-    if (quantity <= 0) {
-        alert("Enter a valid quantity.");
-        return;
-    }
-
-    if (quantity > Number(chemical.stock || 0)) {
-        alert(
-            `Insufficient stock. Available: ${chemical.stock || 0} ${chemical.unit || ""}`
-        );
-        return;
-    }
-
-    const { error } = await db.rpc("record_chemical_consumption", {
-        p_chemical_id: chemical.id,
-        p_consumption_date: consumptionDate,
-        p_department: department,
-        p_quantity: quantity,
-        p_unit: chemical.unit,
-        p_used_by:
-            document.getElementById("consumptionUser")?.value.trim() || null,
-        p_purpose:
-            document.getElementById("consumptionPurpose")?.value.trim() || null,
-        p_remarks:
-            document.getElementById("consumptionRemarks")?.value.trim() || null
-    });
-
-    if (error) {
-        alert(
-            "Consumption was not saved.\n\n" +
-            "Make sure the Supabase function record_chemical_consumption exists.\n\n" +
-            error.message
-        );
-        return;
-    }
-
-    alert("Consumption recorded successfully.");
-
-    event.target.reset();
-
-    const dateInput = document.getElementById("consumptionDate");
-    if (dateInput) {
-        dateInput.value = new Date().toISOString().slice(0, 10);
-    }
-
-    const unitInput = document.getElementById("consumptionUnit");
-    if (unitInput) unitInput.value = "";
-
-    await loadChemicals();
-    await loadConsumption();
-});
-
-/* ---------------- DASHBOARD ---------------- */
-
-function isExpired(chemical) {
-    if (!chemical.expiry_date) return false;
-
-    const expiry = new Date(chemical.expiry_date);
-    const today = new Date();
-
-    expiry.setHours(0, 0, 0, 0);
-    today.setHours(0, 0, 0, 0);
-
-    return expiry < today;
-}
-
-function isExpiringSoon(chemical) {
-    if (!chemical.expiry_date) return false;
-
-    const expiry = new Date(chemical.expiry_date);
-    const today = new Date();
-
-    expiry.setHours(0, 0, 0, 0);
-    today.setHours(0, 0, 0, 0);
-
-    const days = (expiry - today) / 86400000;
-
-    return days >= 0 && days <= 30;
-}
-
-function updateDashboard() {
-    const total = document.getElementById("totalChemicals");
-    const stock = document.getElementById("stockChemicals");
-    const hazardous = document.getElementById("hazardousChemicals");
-    const expiry = document.getElementById("expiryChemicals");
-
-    if (total) total.innerText = chemicals.length;
-
-    if (stock) {
-        stock.innerText =
-            chemicals.filter(c => Number(c.stock || 0) > 0).length;
-    }
-
-    if (hazardous) {
-        hazardous.innerText =
-            chemicals.filter(c => c.hazard !== "Non-Hazardous").length;
-    }
-
-    if (expiry) {
-        expiry.innerText =
-            chemicals.filter(c => isExpired(c) || isExpiringSoon(c)).length;
-    }
-
-    renderRecent();
-}
-
-function hazardClass(hazard) {
-    if (hazard === "Non-Hazardous") return "status-good";
-
-    if (
-        hazard === "Flammable" ||
-        hazard === "Corrosive"
-    ) {
-        return "status-danger";
-    }
-
-    return "status-warning";
-}
-
-function renderRecent() {
-    const table = document.getElementById("recentTable");
-    if (!table) return;
-
-    const recent = chemicals.slice(0, 5);
-
-    table.innerHTML = recent.length
-        ? recent.map(chemical => `
-            <tr>
-                <td>${escapeHTML(chemical.chemical_code)}</td>
-                <td>${escapeHTML(chemical.chemical_name)}</td>
-                <td>${escapeHTML(chemical.department || "")}</td>
-                <td>
-                    ${Number(chemical.stock || 0).toFixed(2)}
-                    ${escapeHTML(chemical.unit || "")}
-                </td>
-                <td>
-                    <span class="status ${hazardClass(chemical.hazard)}">
-                        ${escapeHTML(chemical.hazard || "-")}
-                    </span>
-                </td>
-            </tr>
-        `).join("")
-        : '<tr><td colspan="5" style="text-align:center;padding:25px">No chemical records available.</td></tr>';
-}
-
-/* ---------------- INVENTORY ---------------- */
-
-function formatDate(value) {
-    if (!value) return "-";
-    const d = new Date(value + (String(value).length === 10 ? "T00:00:00" : ""));
-    if (Number.isNaN(d.getTime())) return escapeHTML(value);
-    return d.toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric"
-    });
-}
-
-function inventoryActionButtons(c) {
-    const id = escapeHTML(c.id);
-    if (!isAdmin()) {
-        return `
-            <div class="action-group">
-                <button class="icon-action view" title="View chemical" aria-label="View chemical"
-                        onclick="viewChemical('${id}')">⌁</button>
-            </div>
-        `;
-    }
-
-    return `
-        <div class="action-group">
-            <button class="icon-action view" title="View chemical" aria-label="View chemical"
-                    onclick="viewChemical('${id}')">⌁</button>
-            <button class="icon-action edit" title="Edit chemical" aria-label="Edit chemical"
-                    onclick="editChemical('${id}')">✎</button>
-            <button class="icon-action delete" title="Delete chemical" aria-label="Delete chemical"
-                    onclick="deleteChemical('${id}')">×</button>
-        </div>
-    `;
-}
-
-function renderInventory() {
-    const search = (document.getElementById("searchChemical")?.value || "").toLowerCase();
-    const dept = document.getElementById("departmentFilter")?.value || "";
-    const hazard = document.getElementById("hazardFilter")?.value || "";
-    const table = document.getElementById("inventoryTable");
-    if (!table) return;
-
-    const filtered = chemicals.filter(c =>
-        `${c.chemical_name || ""} ${c.chemical_code || ""} ${c.cas_no || ""} ${c.supplier || ""}`
-            .toLowerCase()
-            .includes(search) &&
-        (!dept || c.department === dept) &&
-        (!hazard || c.hazard === hazard)
-    );
-
-    table.innerHTML = filtered.length ? filtered.map(c => `
-        <tr>
-            <td><span class="code-badge">${escapeHTML(c.chemical_code)}</span></td>
-            <td>
-                <div class="chemical-cell">
-                    <strong>${escapeHTML(c.chemical_name)}</strong>
-                    <small>${escapeHTML(c.manufacturer || c.supplier || "Supplier not recorded")}</small>
-                </div>
-            </td>
-            <td>${escapeHTML(c.cas_no || "-")}</td>
-            <td>${escapeHTML(c.department || "-")}</td>
-            <td><span class="status ${hazardClass(c.hazard)}">${escapeHTML(c.hazard || "-")}</span></td>
-            <td><strong>${Number(c.stock || 0).toFixed(2)}</strong></td>
-            <td>${escapeHTML(c.unit || "-")}</td>
-            <td>${escapeHTML(c.storage_location || "-")}</td>
-            <td>
-                <div class="expiry-cell">
-                    <span>${formatDate(c.expiry_date)}</span>
-                    ${isExpired(c) ? '<small class="expiry-danger">Expired</small>' :
-                      isExpiringSoon(c) ? '<small class="expiry-warning">Review soon</small>' : ''}
-                </div>
-            </td>
-            <td>${inventoryActionButtons(c)}</td>
-        </tr>
-    `).join("") : `
-        <tr>
-            <td colspan="10">
-                <div class="empty-state">
-                    <div class="empty-symbol">∅</div>
-                    <strong>No chemical records found</strong>
-                    <span>Try changing your search or filter.</span>
-                </div>
-            </td>
-        </tr>
-    `;
-}
-
-function ensureChemicalModal() {
-    if (document.getElementById("chemicalModal")) return;
-
-    document.body.insertAdjacentHTML("beforeend", `
-        <div id="chemicalModal" class="rkcms-modal hidden">
-            <div class="rkcms-modal-backdrop" onclick="closeChemicalModal()"></div>
-            <div class="rkcms-modal-card" role="dialog" aria-modal="true">
-                <div class="rkcms-modal-header">
-                    <div>
-                        <span id="modalEyebrow">CHEMICAL RECORD</span>
-                        <h2 id="modalTitle">Chemical</h2>
-                    </div>
-                    <button class="modal-close" onclick="closeChemicalModal()" aria-label="Close">×</button>
-                </div>
-                <div id="chemicalModalBody"></div>
-            </div>
-        </div>
-    `);
-}
-
-function openChemicalModal() {
-    ensureChemicalModal();
-    document.getElementById("chemicalModal").classList.remove("hidden");
-    document.body.classList.add("modal-open");
-}
-
-function closeChemicalModal() {
-    document.getElementById("chemicalModal")?.classList.add("hidden");
-    document.body.classList.remove("modal-open");
-}
-
-function viewChemical(id) {
-    const c = chemicals.find(x => String(x.id) === String(id));
-    if (!c) return;
-
-    ensureChemicalModal();
-
-    document.getElementById("modalEyebrow").innerText = "CHEMICAL DETAILS";
-    document.getElementById("modalTitle").innerText = c.chemical_name || "Chemical";
-
-    document.getElementById("chemicalModalBody").innerHTML = `
-        <div class="detail-grid">
-            <div><span>Code</span><strong>${escapeHTML(c.chemical_code)}</strong></div>
-            <div><span>CAS No.</span><strong>${escapeHTML(c.cas_no || "-")}</strong></div>
-            <div><span>Department</span><strong>${escapeHTML(c.department || "-")}</strong></div>
-            <div><span>Process</span><strong>${escapeHTML(c.process || "-")}</strong></div>
-            <div><span>Hazard</span><strong><span class="status ${hazardClass(c.hazard)}">${escapeHTML(c.hazard || "-")}</span></strong></div>
-            <div><span>Stock</span><strong>${Number(c.stock || 0).toFixed(2)} ${escapeHTML(c.unit || "")}</strong></div>
-            <div><span>Supplier</span><strong>${escapeHTML(c.supplier || "-")}</strong></div>
-            <div><span>Storage</span><strong>${escapeHTML(c.storage_location || "-")}</strong></div>
-            <div><span>Purchase Date</span><strong>${formatDate(c.purchase_date)}</strong></div>
-            <div><span>Expiry / Review</span><strong>${formatDate(c.expiry_date)}</strong></div>
-            <div><span>SDS</span><strong>${c.sds_available ? "Available" : "Not available"}</strong></div>
-            <div><span>GHS Label</span><strong>${c.ghs_available ? "Available" : "Not available"}</strong></div>
-        </div>
-        <div class="detail-remarks">
-            <span>Remarks</span>
-            <p>${escapeHTML(c.remarks || "No remarks recorded.")}</p>
-        </div>
-        <div class="modal-footer">
-            ${isAdmin() ? `<button class="secondary-btn" onclick="closeChemicalModal(); editChemical('${escapeHTML(c.id)}')">Edit record</button>` : ""}
-            <button class="primary-btn" onclick="closeChemicalModal()">Close</button>
-        </div>
-    `;
-
-    openChemicalModal();
-}
-
-function editChemical(id) {
-    if (!isAdmin()) {
-        alert("Admin access required.");
-        return;
-    }
-
-    const c = chemicals.find(x => String(x.id) === String(id));
-    if (!c) return;
-
-    ensureChemicalModal();
-
-    document.getElementById("modalEyebrow").innerText = "ADMINISTRATOR";
-    document.getElementById("modalTitle").innerText = `Edit ${c.chemical_name || "Chemical"}`;
-
-    const options = (items, selected) =>
-        items.map(x => `<option value="${escapeHTML(x)}" ${String(x) === String(selected || "") ? "selected" : ""}>${escapeHTML(x)}</option>`).join("");
-
-    const hazardOptions = ["Flammable","Corrosive","Toxic","Irritant","Oxidizing","Non-Hazardous"];
-
-    document.getElementById("chemicalModalBody").innerHTML = `
-        <form id="editChemicalForm" class="edit-form">
-            <div class="edit-grid">
-                <div class="form-group">
-                    <label>Chemical Name *</label>
-                    <input id="editChemicalName" required value="${escapeHTML(c.chemical_name || "")}">
-                </div>
-                <div class="form-group">
-                    <label>CAS Number</label>
-                    <input id="editCasNo" value="${escapeHTML(c.cas_no || "")}">
-                </div>
-                <div class="form-group">
-                    <label>Supplier</label>
-                    <input id="editSupplier" value="${escapeHTML(c.supplier || "")}">
-                </div>
-                <div class="form-group">
-                    <label>Department</label>
-                    <select id="editDepartment">${options(departments, c.department)}</select>
-                </div>
-                <div class="form-group">
-                    <label>Hazard Classification</label>
-                    <select id="editHazard">${options(hazardOptions, c.hazard)}</select>
-                </div>
-                <div class="form-group">
-                    <label>Stock</label>
-                    <input id="editStock" type="number" min="0" step="0.01" value="${Number(c.stock || 0)}">
-                </div>
-                <div class="form-group">
-                    <label>Unit</label>
-                    <select id="editUnit">
-                        ${options(["Kg","Litre","Gram","ML","Nos"], c.unit)}
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Storage Location</label>
-                    <input id="editStorage" value="${escapeHTML(c.storage_location || "")}">
-                </div>
-                <div class="form-group">
-                    <label>Purchase Date</label>
-                    <input id="editPurchaseDate" type="date" value="${escapeHTML(c.purchase_date || "")}">
-                </div>
-                <div class="form-group">
-                    <label>Expiry / Review Date</label>
-                    <input id="editExpiryDate" type="date" value="${escapeHTML(c.expiry_date || "")}">
-                </div>
-                <div class="form-group">
-                    <label>SDS Available</label>
-                    <select id="editSds">
-                        <option value="true" ${c.sds_available === true ? "selected" : ""}>Yes</option>
-                        <option value="false" ${c.sds_available !== true ? "selected" : ""}>No</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>GHS Label Available</label>
-                    <select id="editGhs">
-                        <option value="true" ${c.ghs_available === true ? "selected" : ""}>Yes</option>
-                        <option value="false" ${c.ghs_available !== true ? "selected" : ""}>No</option>
-                    </select>
-                </div>
-            </div>
-            <div class="form-group edit-remarks">
-                <label>Remarks</label>
-                <textarea id="editRemarks">${escapeHTML(c.remarks || "")}</textarea>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="secondary-btn" onclick="closeChemicalModal()">Cancel</button>
-                <button type="submit" class="primary-btn">Save Changes</button>
-            </div>
-        </form>
-    `;
-
-    document.getElementById("editChemicalForm").addEventListener("submit", async e => {
-        e.preventDefault();
-
-        const payload = {
-            chemical_name: document.getElementById("editChemicalName").value.trim(),
-            cas_no: document.getElementById("editCasNo").value.trim() || null,
-            supplier: document.getElementById("editSupplier").value.trim() || null,
-            department: document.getElementById("editDepartment").value || null,
-            hazard: document.getElementById("editHazard").value || null,
-            stock: Number(document.getElementById("editStock").value) || 0,
-            unit: document.getElementById("editUnit").value || null,
-            storage_location: document.getElementById("editStorage").value.trim() || null,
-            purchase_date: document.getElementById("editPurchaseDate").value || null,
-            expiry_date: document.getElementById("editExpiryDate").value || null,
-            sds_available: document.getElementById("editSds").value === "true",
-            ghs_available: document.getElementById("editGhs").value === "true",
-            remarks: document.getElementById("editRemarks").value.trim() || null
-        };
-
-        // Keep the update limited to the selected chemical.
-        // Returning the updated row also lets us detect an RLS policy that
-        // matches the UPDATE command but does not allow this row to be changed.
-        payload.updated_at = new Date().toISOString();
-
-        const { data: updatedRow, error } = await db
-            .from("chemicals")
-            .update(payload)
-            .eq("id", c.id)
-            .select("id, chemical_code")
-            .single();
-
-        if (error) {
-            console.error("RK-CMS UPDATE error:", error);
-            alert(
-                "Chemical could not be updated.\n\n" +
-                error.message +
-                "\n\nIf this is an RLS error, run the UPDATE policy SQL provided with this update."
-            );
-            return;
-        }
-
-        if (!updatedRow) {
-            alert("No chemical was updated. Please verify the Supabase UPDATE policy.");
-            return;
-        }
-
-        closeChemicalModal();
-        await loadChemicals();
-        alert("Chemical updated successfully.");
-    });
-}
-
-async function deleteChemical(id) {
-    if (!isAdmin()) return;
-
-    const chemical = chemicals.find(item => String(item.id) === String(id));
-    if (!chemical) return;
-
-    ensureChemicalModal();
-    document.getElementById("modalEyebrow").innerText = "PERMANENT ACTION";
-    document.getElementById("modalTitle").innerText = "Delete chemical?";
-
-    document.getElementById("chemicalModalBody").innerHTML = `
-        <div class="delete-confirm">
-            <div class="delete-symbol">×</div>
-            <h3>${escapeHTML(chemical.chemical_name)}</h3>
-            <p>This will permanently remove <strong>${escapeHTML(chemical.chemical_code)}</strong> from the chemical master.</p>
-            <div class="modal-footer">
-                <button class="secondary-btn" onclick="closeChemicalModal()">Cancel</button>
-                <button class="danger-btn" onclick="confirmDeleteChemical('${escapeHTML(chemical.id)}')">Delete Chemical</button>
-            </div>
-        </div>
-    `;
-
-    openChemicalModal();
-}
-
-async function confirmDeleteChemical(id) {
-    if (!isAdmin()) return;
-
-    const { error } = await db.from("chemicals").delete().eq("id", id);
-
-    if (error) {
-        alert("Chemical could not be deleted.\n\n" + error.message);
-        return;
-    }
-
-    closeChemicalModal();
-    await loadChemicals();
-}
-
-
-/* ---------------- REPORTS ---------------- */
-
-function updateReports() {
-    const sdsAvailable = document.getElementById("sdsAvailable");
-    const sdsMissing = document.getElementById("sdsMissing");
-    const ghsMissing = document.getElementById("ghsMissing");
-
-    if (sdsAvailable) {
-        sdsAvailable.innerText =
-            chemicals.filter(c => c.sds_available === true).length;
-    }
-
-    if (sdsMissing) {
-        sdsMissing.innerText =
-            chemicals.filter(c => c.sds_available !== true).length;
-    }
-
-    if (ghsMissing) {
-        ghsMissing.innerText =
-            chemicals.filter(c => c.ghs_available !== true).length;
-    }
-}
-
-/* ---------------- CSV EXPORT ---------------- */
-
-function csvDownload(filename, headers, rows) {
-    const csv = [headers, ...rows]
-        .map(row =>
-            row
-                .map(value =>
-                    `"${String(value ?? "").replace(/"/g, '""')}"`
-                )
-                .join(",")
-        )
-        .join("\n");
-
-    const url = URL.createObjectURL(
-        new Blob([csv], { type: "text/csv;charset=utf-8;" })
-    );
-
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = filename;
-    anchor.click();
-
-    URL.revokeObjectURL(url);
-}
-
-function exportCSV() {
-    csvDownload(
-        "Chemical_Inventory.csv",
-        [
-            "Chemical ID",
-            "Chemical Name",
-            "CAS Number",
-            "Manufacturer",
-            "Supplier",
-            "Department",
-            "Process",
-            "Hazard",
-            "Stock",
-            "Unit",
-            "Storage Location",
-            "Purchase Date",
-            "Expiry Date",
-            "SDS Available",
-            "GHS Label Available",
-            "Remarks"
-        ],
-        chemicals.map(c => [
-            c.chemical_code,
-            c.chemical_name,
-            c.cas_no,
-            c.manufacturer,
-            c.supplier,
-            c.department,
-            c.process,
-            c.hazard,
-            c.stock,
-            c.unit,
-            c.storage_location,
-            c.purchase_date,
-            c.expiry_date,
-            c.sds_available,
-            c.ghs_available,
-            c.remarks
-        ])
-    );
-}
-
-function exportConsumptionCSV() {
-    csvDownload(
-        "Chemical_Consumption_Log.csv",
-        [
-            "Date",
-            "Chemical",
-            "Department",
-            "Quantity",
-            "Unit",
-            "Used By",
-            "Purpose",
-            "Remarks",
-            "Recorded By"
-        ],
-        consumptionLogs.map(log => [
-            log.consumption_date,
-            log.chemicals?.chemical_name,
-            log.department,
-            log.quantity,
-            log.unit,
-            log.used_by,
-            log.purpose,
-            log.remarks,
-            log.recorded_by
-        ])
-    );
-}
-
-/* ---------------- FILTERS ---------------- */
-
-document.getElementById("searchChemical")?.addEventListener(
-    "input",
-    renderInventory
-);
-
-document.getElementById("departmentFilter")?.addEventListener(
-    "change",
-    renderInventory
-);
-
-document.getElementById("hazardFilter")?.addEventListener(
-    "change",
-    renderInventory
-);
-
-/* ---------------- LOGIN ---------------- */
-
-document.getElementById("loginForm")?.addEventListener("submit", async event => {
-    event.preventDefault();
-
-    const errorBox = document.getElementById("loginError");
-    const button = event.target.querySelector("button[type='submit']");
-
-    if (errorBox) errorBox.innerText = "";
-
-    if (button) {
-        button.disabled = true;
-
-        const span = button.querySelector("span:first-child");
-        if (span) span.innerText = "Signing in...";
-    }
-
-    try {
-        const { data, error } = await db.auth.signInWithPassword({
-            email: document.getElementById("loginEmail").value.trim(),
-            password: document.getElementById("loginPassword").value
-        });
-
-        if (error) throw error;
-
-        currentUser = data.user;
-
-        await startApp();
-    } catch (error) {
-        console.error(error);
-
-        if (errorBox) {
-            errorBox.innerText =
-                error.message || "Invalid email or password.";
-        }
-    } finally {
-        if (button) {
-            button.disabled = false;
-
-            const span = button.querySelector("span:first-child");
-            if (span) span.innerText = "Sign In";
-        }
-    }
-});
-
-document.getElementById("togglePassword")?.addEventListener(
-    "click",
-    function () {
-        const input = document.getElementById("loginPassword");
-        if (!input) return;
-
-        const isPassword = input.type === "password";
-
-        input.type = isPassword ? "text" : "password";
-        this.innerText = isPassword ? "Hide" : "Show";
-    }
-);
-
-document.getElementById("logoutBtn")?.addEventListener(
-    "click",
-    async () => {
-        await db.auth.signOut();
-        location.reload();
-    }
-);
-
-/* ---------------- APP START ---------------- */
-
-async function startApp() {
-    try {
-        document.getElementById("appShell")?.classList.add("hidden");
-
-        await loadProfile();
-        await loadChemicals();
-        await loadConsumption();
-
-        document.getElementById("loginPage")?.classList.add("hidden");
-        document.getElementById("appShell")?.classList.remove("hidden");
-
-        showPage("dashboard");
-    } catch (error) {
-        console.error(error);
-
-        document.getElementById("loginPage")?.classList.remove("hidden");
-        document.getElementById("appShell")?.classList.add("hidden");
-
-        const loginError = document.getElementById("loginError");
-        if (loginError) {
-            loginError.innerText =
-                error.message || "Unable to load your account.";
-        }
-
-        await db.auth.signOut();
-
-        currentUser = null;
-        currentProfile = null;
-    }
-}
-
-
-document.addEventListener("keydown", event => {
-    if (event.key === "Escape") closeChemicalModal();
-});
-
-/* ---------------- INITIALIZATION ---------------- */
-
 (async function init() {
-    fillDepartmentSelects();
-
-    const consumptionDate = document.getElementById("consumptionDate");
-    if (consumptionDate) {
-        consumptionDate.value =
-            new Date().toISOString().slice(0, 10);
-    }
-
-    document.getElementById("loginPage")?.classList.remove("hidden");
-    document.getElementById("appShell")?.classList.add("hidden");
-
-    const { data } = await db.auth.getSession();
-
-    if (data.session) {
-        currentUser = data.session.user;
-        await startApp();
-    }
+  $("addFields").innerHTML = fieldsHTML("a_");
+  const opt = (a, first) => `<option value="">${first}</option>` + a.map(x => `<option>${x}</option>`).join("");
+  $("deptFilter").innerHTML = opt(DEPTS, "All departments"); $("hazFilter").innerHTML = opt(HAZ, "All hazard types"); $("useDept").innerHTML = opt(DEPTS, "Select department");
+  $("useDate").value = today();
+  const {data} = await db.auth.getSession();
+  if (data.session) { me = data.session.user; await start(); }
 })();
