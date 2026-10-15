@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0a1120">
     <title>RK-CMS | Chemical Management System</title>
     <link rel="icon" href="logo.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -91,83 +92,71 @@
     <aside class="sidebar">
         <div class="brand">
             <img src="logo.png" alt="Company logo" class="sidebar-logo">
-            <div class="brand-text">
-                <h2>RK-CMS</h2>
-                <span>Chemical management</span>
-            </div>
+            <div class="brand-text"><h2>RK-CMS</h2><span>Chemical management</span></div>
         </div>
-
         <nav>
-            <button class="nav-btn active" data-page="dashboard"><i class="fa-solid fa-gauge-high nav-icon"></i><span>Dashboard</span></button>
-            <button class="nav-btn" data-page="inventory"><i class="fa-solid fa-flask nav-icon"></i><span>Chemical Inventory</span></button>
-            <button class="nav-btn admin-only" data-page="addChemical"><i class="fa-solid fa-circle-plus nav-icon"></i><span>Add Chemical</span></button>
-            <button class="nav-btn" data-page="consumption"><i class="fa-solid fa-droplet nav-icon"></i><span>Consumption Log</span></button>
-            <button class="nav-btn" data-page="reports"><i class="fa-solid fa-chart-column nav-icon"></i><span>Reports</span></button>
+            <button class="nav-btn active" data-page="dashboard"><i class="fa-solid fa-table-cells-large nav-icon"></i><span>Home</span></button>
+            <button class="nav-btn" data-page="inventory"><i class="fa-solid fa-cube nav-icon"></i><span>Inventory</span></button>
+            <button class="nav-btn admin-only" data-page="addChemical"><i class="fa-solid fa-plus nav-icon"></i><span>Add Chemical</span></button>
+            <button class="nav-btn" data-page="consumption"><i class="fa-solid fa-droplet nav-icon"></i><span>Record Use</span></button>
+            <button class="nav-btn" data-page="ledger"><i class="fa-solid fa-clipboard-list nav-icon"></i><span>Stock Ledger</span></button>
+            <button class="nav-btn" data-page="reports"><i class="fa-solid fa-chart-simple nav-icon"></i><span>Reports</span></button>
+            <button class="nav-btn" data-page="settings"><i class="fa-solid fa-gear nav-icon"></i><span>Settings</span></button>
         </nav>
-
-        <div class="sidebar-footer">
-            <div class="live-pill" id="livePill"><i class="fa-solid fa-circle"></i><span>Connecting…</span></div>
-            <small>Internal factory use</small><br>
-            <small>© 2026 EHS</small>
-        </div>
+        <div class="sidebar-footer"><small>Internal factory use</small><br><small>© 2026 EHS</small></div>
     </aside>
 
     <main class="main">
         <header class="topbar">
-            <div>
-                <h1 id="pageTitle">Dashboard</h1>
-                <p>Chemical Management System</p>
-            </div>
+            <h1 id="pageTitle">Dashboard</h1>
             <div class="topbar-actions">
+                <div class="live-pill" id="livePill"><i class="fa-solid fa-circle"></i><span>Connecting…</span></div>
                 <div class="user-info" id="userInfo"><i class="fa-solid fa-user"></i><span>User</span></div>
-                <button class="logout-btn" id="logoutBtn"><i class="fa-solid fa-right-from-bracket"></i><span>Logout</span></button>
             </div>
         </header>
 
-        <!-- DASHBOARD -->
+        <!-- HOME -->
         <section id="dashboard" class="page active">
-            <div class="cards">
-                <div class="card"><div class="card-icon blue"><i class="fa-solid fa-flask"></i></div><div><span>Total Chemicals</span><h2 id="totalChemicals">0</h2></div></div>
-                <div class="card"><div class="card-icon green"><i class="fa-solid fa-boxes-stacked"></i></div><div><span>In Stock</span><h2 id="stockChemicals">0</h2></div></div>
-                <div class="card"><div class="card-icon orange"><i class="fa-solid fa-triangle-exclamation"></i></div><div><span>Hazardous</span><h2 id="hazardousChemicals">0</h2></div></div>
-                <div class="card"><div class="card-icon red"><i class="fa-solid fa-calendar-xmark"></i></div><div><span>Expiry / Review Due</span><h2 id="expiryChemicals">0</h2></div></div>
+            <div class="hero">
+                <small id="heroDate">&nbsp;</small>
+                <h2 id="heroName">Hello</h2>
+                <p id="heroStatus">Loading…</p>
             </div>
 
-            <div class="dashboard-grid">
-                <div class="panel">
-                    <div class="panel-header"><h2>Recent Chemicals</h2><button class="small-btn" data-page="inventory">View all</button></div>
-                    <div class="table-container"><table><thead><tr><th>ID</th><th>Chemical Name</th><th>Department</th><th>Stock</th><th>Hazard</th></tr></thead><tbody id="recentTable"></tbody></table></div>
-                </div>
-                <div class="panel">
-                    <div class="panel-header"><h2>Quick Actions</h2></div>
-                    <div class="quick-actions">
-                        <button class="admin-only" data-page="addChemical"><i class="fa-solid fa-circle-plus quick-icon"></i>Add chemical</button>
-                        <button data-page="inventory"><i class="fa-solid fa-magnifying-glass quick-icon"></i>Search inventory</button>
-                        <button data-page="consumption"><i class="fa-solid fa-droplet quick-icon"></i>Record consumption</button>
-                        <button onclick="exportCSV()"><i class="fa-solid fa-file-arrow-down quick-icon"></i>Export inventory</button>
-                    </div>
-                </div>
+            <div class="tiles">
+                <button class="tile admin-only" data-page="addChemical"><i class="fa-solid fa-plus"></i><span>Add Chemical</span></button>
+                <button class="tile" data-page="consumption"><i class="fa-solid fa-droplet"></i><span>Record Use</span></button>
+                <button class="tile" data-page="ledger"><i class="fa-solid fa-clipboard-list"></i><span>Stock Ledger</span></button>
+                <button class="tile" data-page="reports"><i class="fa-solid fa-chart-simple"></i><span>Reports</span></button>
+                <button class="tile" onclick="exportCSV()"><i class="fa-solid fa-download"></i><span>Export CSV</span></button>
+                <button class="tile" onclick="refreshAll()"><i class="fa-solid fa-rotate"></i><span>Refresh</span></button>
+            </div>
+
+            <div class="stats">
+                <div class="stat teal"><span>Total chemicals</span><h2 id="totalChemicals">0</h2></div>
+                <div class="stat green"><span>In stock</span><h2 id="stockChemicals">0</h2></div>
+                <div class="stat amber"><span>Hazardous</span><h2 id="hazardousChemicals">0</h2></div>
+                <div class="stat red"><span>Expiry / review due</span><h2 id="expiryChemicals">0</h2></div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header"><h2>Recent chemicals</h2><button class="small-btn" data-page="inventory">View all</button></div>
+                <div class="table-container"><table class="stack"><thead><tr><th>ID</th><th>Chemical Name</th><th>Department</th><th>Stock</th><th>Hazard</th></tr></thead><tbody id="recentTable"></tbody></table></div>
             </div>
         </section>
 
         <!-- INVENTORY -->
         <section id="inventory" class="page">
             <div class="panel">
-                <div class="panel-header">
-                    <h2>Chemical Inventory</h2>
-                    <button onclick="exportCSV()" class="primary-btn"><i class="fa-solid fa-file-arrow-down"></i>Export CSV</button>
-                </div>
+                <div class="panel-header"><h2>Chemical Inventory</h2>
+                    <button onclick="exportCSV()" class="primary-btn"><i class="fa-solid fa-download"></i>Export CSV</button></div>
                 <div class="filters">
                     <input type="text" id="searchChemical" placeholder="Search chemical, code, CAS or supplier...">
                     <select id="departmentFilter"><option value="">All Departments</option></select>
-                    <select id="hazardFilter">
-                        <option value="">All Hazard Types</option>
-                        <option>Flammable</option><option>Corrosive</option><option>Toxic</option>
-                        <option>Irritant</option><option>Oxidizing</option><option>Non-Hazardous</option>
-                    </select>
+                    <select id="hazardFilter"><option value="">All Hazard Types</option><option>Flammable</option><option>Corrosive</option><option>Toxic</option><option>Irritant</option><option>Oxidizing</option><option>Non-Hazardous</option></select>
                 </div>
                 <label class="archived-toggle admin-only"><input type="checkbox" id="showArchived"> Show removed chemicals</label>
-                <div class="table-container"><table><thead><tr><th>ID</th><th>Chemical Name</th><th>CAS No.</th><th>Department</th><th>Hazard</th><th>Stock</th><th>Unit</th><th>Storage</th><th>Expiry</th><th>SDS</th><th>Actions</th></tr></thead><tbody id="inventoryTable"></tbody></table></div>
+                <div class="table-container"><table class="stack"><thead><tr><th>ID</th><th>Chemical Name</th><th>CAS No.</th><th>Department</th><th>Hazard</th><th>Stock</th><th>Unit</th><th>Storage</th><th>Expiry</th><th>SDS</th><th>Actions</th></tr></thead><tbody id="inventoryTable"></tbody></table></div>
             </div>
         </section>
 
@@ -183,9 +172,7 @@
                         <div class="form-group"><label>Supplier</label><input id="supplier" placeholder="Supplier name"></div>
                         <div class="form-group"><label>Department *</label><select id="department" required></select></div>
                         <div class="form-group"><label>Process / Use</label><input id="process" placeholder="Example: Dyeing, ETP dosing"></div>
-                        <div class="form-group"><label>Hazard Classification *</label>
-                            <select id="hazard" required><option value="">Select hazard</option><option>Flammable</option><option>Corrosive</option><option>Toxic</option><option>Irritant</option><option>Oxidizing</option><option>Non-Hazardous</option></select>
-                        </div>
+                        <div class="form-group"><label>Hazard Classification *</label><select id="hazard" required><option value="">Select hazard</option><option>Flammable</option><option>Corrosive</option><option>Toxic</option><option>Irritant</option><option>Oxidizing</option><option>Non-Hazardous</option></select></div>
                         <div class="form-group"><label>Current Stock</label><input type="number" id="stock" min="0" step="0.01" value="0"></div>
                         <div class="form-group"><label>Unit</label><select id="unit"></select></div>
                         <div class="form-group"><label>Storage Location</label><input id="storage" placeholder="Example: Chemical Store - Rack A1"></div>
@@ -194,33 +181,28 @@
                         <div class="form-group"><label>SDS Available?</label><select id="sds"><option>Yes</option><option>No</option></select></div>
                         <div class="form-group"><label>GHS Label Available?</label><select id="ghs"><option>Yes</option><option>No</option></select></div>
                     </div>
-
                     <div class="form-group full">
                         <label>SDS File (PDF or image, max 10 MB)</label>
-                        <label class="file-drop" for="sdsFile">
-                            <i class="fa-solid fa-cloud-arrow-up"></i>
-                            <span id="sdsFileName">Choose SDS file</span>
-                        </label>
+                        <label class="file-drop" for="sdsFile"><i class="fa-solid fa-cloud-arrow-up"></i><span id="sdsFileName">Choose SDS file</span></label>
                         <input type="file" id="sdsFile" accept=".pdf,image/*" class="visually-hidden">
                     </div>
-
                     <div class="form-group full"><label>Remarks</label><textarea id="remarks" placeholder="Enter additional information..."></textarea></div>
                     <div class="form-buttons">
-                        <button type="reset" class="secondary-btn" id="clearChemicalForm">Clear</button>
+                        <button type="reset" class="secondary-btn">Clear</button>
                         <button type="submit" class="primary-btn"><i class="fa-solid fa-floppy-disk"></i>Save chemical</button>
                     </div>
                 </form>
             </div>
         </section>
 
-        <!-- CONSUMPTION -->
+        <!-- RECORD USE -->
         <section id="consumption" class="page">
             <div class="panel">
-                <div class="panel-header"><h2>Record Chemical Consumption</h2></div>
+                <div class="panel-header"><h2>Record Use</h2></div>
                 <form id="consumptionForm">
                     <div class="form-grid">
                         <div class="form-group"><label>Chemical *</label><select id="consumptionChemical" required></select></div>
-                        <div class="form-group"><label>Consumption Date *</label><input id="consumptionDate" type="date" required></div>
+                        <div class="form-group"><label>Date *</label><input id="consumptionDate" type="date" required></div>
                         <div class="form-group"><label>Department *</label><select id="consumptionDepartment" required></select></div>
                         <div class="form-group"><label>Quantity *</label><input id="consumptionQty" type="number" min="0.01" step="0.01" required></div>
                         <div class="form-group"><label>Unit</label><input id="consumptionUnit" readonly></div>
@@ -230,34 +212,76 @@
                     <div class="form-group full"><label>Remarks</label><textarea id="consumptionRemarks"></textarea></div>
                     <div class="form-buttons">
                         <button type="reset" class="secondary-btn">Clear</button>
-                        <button type="submit" class="primary-btn"><i class="fa-solid fa-floppy-disk"></i>Save consumption</button>
+                        <button type="submit" class="primary-btn"><i class="fa-solid fa-floppy-disk"></i>Save use</button>
                     </div>
                 </form>
             </div>
-
             <div class="panel">
                 <div class="panel-header"><h2>Consumption History</h2>
-                    <button onclick="exportConsumptionCSV()" class="primary-btn"><i class="fa-solid fa-file-arrow-down"></i>Export CSV</button>
+                    <button onclick="exportConsumptionCSV()" class="primary-btn"><i class="fa-solid fa-download"></i>Export CSV</button></div>
+                <div class="table-container"><table class="stack"><thead><tr><th>Date</th><th>Chemical</th><th>Department</th><th>Quantity</th><th>Used By</th><th>Purpose</th><th>Recorded By</th></tr></thead><tbody id="consumptionTable"></tbody></table></div>
+            </div>
+        </section>
+
+        <!-- STOCK LEDGER -->
+        <section id="ledger" class="page">
+            <div class="panel">
+                <div class="panel-header"><h2>Stock Ledger</h2>
+                    <button onclick="exportLedgerCSV()" class="primary-btn"><i class="fa-solid fa-download"></i>Export CSV</button></div>
+                <div class="filters filters-2">
+                    <input type="text" id="ledgerSearch" placeholder="Search chemical or note...">
+                    <select id="ledgerChemical"><option value="">All chemicals</option></select>
                 </div>
-                <div class="table-container"><table><thead><tr><th>Date</th><th>Chemical</th><th>Department</th><th>Quantity</th><th>Used By</th><th>Purpose</th><th>Recorded By</th></tr></thead><tbody id="consumptionTable"></tbody></table></div>
+                <div class="table-container"><table class="stack"><thead><tr><th>Date</th><th>Chemical</th><th>Type</th><th>Quantity</th><th>Balance</th><th>Note</th><th>By</th></tr></thead><tbody id="ledgerTable"></tbody></table></div>
             </div>
         </section>
 
         <!-- REPORTS -->
         <section id="reports" class="page">
-            <div class="cards cards-3">
-                <div class="card"><div class="card-icon blue"><i class="fa-solid fa-file-shield"></i></div><div><span>SDS Available</span><h2 id="sdsAvailable">0</h2></div></div>
-                <div class="card"><div class="card-icon red"><i class="fa-solid fa-file-circle-xmark"></i></div><div><span>SDS Missing</span><h2 id="sdsMissing">0</h2></div></div>
-                <div class="card"><div class="card-icon orange"><i class="fa-solid fa-tags"></i></div><div><span>GHS Label Missing</span><h2 id="ghsMissing">0</h2></div></div>
+            <div class="stats stats-3">
+                <div class="stat teal"><span>SDS available</span><h2 id="sdsAvailable">0</h2></div>
+                <div class="stat red"><span>SDS missing</span><h2 id="sdsMissing">0</h2></div>
+                <div class="stat amber"><span>GHS label missing</span><h2 id="ghsMissing">0</h2></div>
             </div>
             <div class="panel">
-                <div class="panel-header"><h2>Inventory Report</h2>
-                    <button onclick="exportCSV()" class="primary-btn"><i class="fa-solid fa-file-arrow-down"></i>Download CSV</button>
+                <div class="panel-header"><h2>Reports</h2></div>
+                <p class="report-info">Reports are generated live from the chemical inventory, consumption and stock ledger records.</p>
+                <div class="report-actions">
+                    <button onclick="exportCSV()" class="primary-btn"><i class="fa-solid fa-download"></i>Inventory CSV</button>
+                    <button onclick="exportConsumptionCSV()" class="secondary-btn"><i class="fa-solid fa-download"></i>Consumption CSV</button>
+                    <button onclick="exportLedgerCSV()" class="secondary-btn"><i class="fa-solid fa-download"></i>Stock ledger CSV</button>
                 </div>
-                <p class="report-info">Reports are generated live from the chemical inventory and consumption records.</p>
+            </div>
+        </section>
+
+        <!-- SETTINGS -->
+        <section id="settings" class="page">
+            <div class="panel">
+                <div class="panel-header"><h2>Account</h2></div>
+                <div class="setting-list">
+                    <div><span>Name</span><strong id="setName">-</strong></div>
+                    <div><span>Email</span><strong id="setEmail">-</strong></div>
+                    <div><span>Role</span><strong id="setRole">-</strong></div>
+                    <div><span>Live updates</span><strong id="setLive">-</strong></div>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-header"><h2>Actions</h2></div>
+                <div class="report-actions">
+                    <button onclick="refreshAll()" class="secondary-btn"><i class="fa-solid fa-rotate"></i>Refresh data</button>
+                    <button id="logoutBtn" class="danger-btn"><i class="fa-solid fa-right-from-bracket"></i>Sign out</button>
+                </div>
             </div>
         </section>
     </main>
+
+    <nav class="bottom-nav" aria-label="Main">
+        <button class="bn-btn active" data-page="dashboard"><i class="fa-solid fa-table-cells-large"></i><span>Home</span></button>
+        <button class="bn-btn" data-page="inventory"><i class="fa-solid fa-cube"></i><span>Inventory</span></button>
+        <button class="bn-fab" data-page="consumption" aria-label="Record use"><span class="fab-circle"><i class="fa-solid fa-droplet"></i></span><span class="bn-label">Use</span></button>
+        <button class="bn-btn" data-page="reports"><i class="fa-solid fa-chart-simple"></i><span>Reports</span></button>
+        <button class="bn-btn" data-page="settings"><i class="fa-solid fa-gear"></i><span>Settings</span></button>
+    </nav>
 </div>
 
 <div id="toastHost" class="toast-host" aria-live="polite"></div>

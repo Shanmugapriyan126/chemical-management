@@ -1,6 +1,6 @@
 /* =====================================================================
    RK-CMS - Chemical Management System (Supabase)
-   Final version
+   Final version - dark teal theme (matches the RK-CMS mobile app)
 
    Tables used:
      profiles, chemicals, consumption_logs (+ RPC record_chemical_consumption)
@@ -20,6 +20,7 @@ const db = createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY, {
 let allChemicals = [];      // every row, including removed (active = false)
 let chemicals = [];         // active rows only
 let consumptionLogs = [];
+let ledgerRows = [];
 let profileNames = {};      // user id -> full name
 let currentUser = null;
 let currentProfile = null;
@@ -125,13 +126,13 @@ function showPage(pageId) {
     if (!page) return;
     page.classList.add("active");
 
-    document.querySelectorAll(".nav-btn").forEach(btn =>
+    document.querySelectorAll(".nav-btn, .bn-btn, .bn-fab").forEach(btn =>
         btn.classList.toggle("active", btn.dataset.page === pageId)
     );
 
     const titles = {
-        dashboard: "Dashboard", inventory: "Chemical Inventory",
-        addChemical: "Add Chemical", consumption: "Consumption Log", reports: "Reports"
+        dashboard: "Dashboard", inventory: "Inventory", addChemical: "Add Chemical",
+        consumption: "Record Use", ledger: "Stock Ledger", reports: "Reports", settings: "Settings"
     };
     const title = $("pageTitle");
     if (title) title.innerText = titles[pageId] || "RK-CMS";
@@ -139,7 +140,9 @@ function showPage(pageId) {
     if (pageId === "dashboard") updateDashboard();
     if (pageId === "inventory") renderInventory();
     if (pageId === "consumption") { populateConsumptionChemicals(); loadConsumption(); }
+    if (pageId === "ledger") loadLedger();
     if (pageId === "reports") updateReports();
+    if (pageId === "settings") renderSettings();
     window.scrollTo({ top: 0 });
 }
 
@@ -170,9 +173,33 @@ async function loadProfile() {
         info.innerHTML = `<i class="fa-solid fa-user"></i><span>${escapeHTML(data.full_name || currentUser.email)} • ${escapeHTML(role.toUpperCase())}</span>`;
     }
 
+    renderSettings();
+    updateGreeting();
+
     document.querySelectorAll(".admin-only, .admin-only-page").forEach(el =>
         el.classList.toggle("hidden", role !== "admin")
     );
+}
+
+function renderSettings() {
+    const set = (id, v) => { const el = $(id); if (el) el.innerText = v; };
+    set("setName", currentProfile?.full_name || "-");
+    set("setEmail", currentUser?.email || "-");
+    set("setRole", String(currentProfile?.role || "-").toUpperCase());
+    set("setLive", liveOn ? "Connected" : "Not connected");
+}
+
+function updateGreeting() {
+    const name = currentProfile?.full_name || (currentUser?.email || "").split("@")[0] || "";
+    const set = (id, v) => { const el = $(id); if (el) el.innerText = v; };
+
+    set("heroDate", new Date().toLocaleDateString("en-GB", { weekday: "long", day: "2-digit", month: "long" }));
+    set("heroName", name ? `Hello, ${name}` : "Hello");
+
+    const attention = chemicals.filter(c => isExpired(c) || isExpiringSoon(c) || Number(c.stock || 0) <= 0).length;
+    set("heroStatus", attention
+        ? `${attention} need${attention === 1 ? "s" : ""} attention · ${chemicals.length} active`
+        : `All chemicals are in order · ${chemicals.length} active`);
 }
 
 async function loadProfileNames() {
@@ -468,6 +495,8 @@ function updateDashboard() {
     set("stockChemicals", chemicals.filter(c => Number(c.stock || 0) > 0).length);
     set("hazardousChemicals", chemicals.filter(c => c.hazard && c.hazard !== "Non-Hazardous").length);
     set("expiryChemicals", chemicals.filter(c => isExpired(c) || isExpiringSoon(c)).length);
+
+    updateGreeting();
 
     const table = $("recentTable");
     if (!table) return;
@@ -824,6 +853,115 @@ async function restoreChemical(id) {
     }
 }
 
+/* ---------------- STOCK LEDGER ----------------
+   Reads the stock_transactions table. Column names are matched
+   flexibly (quantity / qty, balance_after / balance, ...) so it keeps
+   working if your ledger uses slightly different names.
+------------------------------------------------------------------ */
+
+function pick(row, keys) {
+    for (const k of keys) if (row[k] !== undefined && row[k] !== null && row[k] !== "") return row[k];
+    return null;
+}
+
+function ledgerView(row) {
+    const chem = allChemicals.find(c => String(c.id) === String(row.chemical_id));
+    const qty = pick(row, ["quantity", "qty", "quantity_change", "change", "amount"]);
+    const type = pick(row, ["transaction_type", "type", "txn_type", "movement_type", "reason"]);
+    const dateRaw = pick(row, ["transaction_date", "created_at", "date"]);
+    const typeText = type ? String(type) : "-";
+    let signed = qty === null ? null : Number(qty);
+    // If the ledger stores unsigned quantities, infer direction from the type.
+    if (signed !== null && signed > 0 && /(out|consum|use|issue|deduct)/i.test(typeText)) signed = -signed;
+    return {
+        date: dateRaw ? String(dateRaw).slice(0, 10) : "",
+        code: chem?.chemical_code || "",
+        name: chem?.chemical_name || "Unknown chemical",
+        chemicalId: row.chemical_id,
+        type: typeText,
+        qty: signed,
+        unit: pick(row, ["unit"]) || chem?.unit || "",
+        balance: pick(row, ["balance_after", "closing_balance", "balance", "stock_after", "new_stock"]),
+        note: pick(row, ["remarks", "reference", "notes", "note", "purpose"]) || "",
+        by: recordedByName(pick(row, ["recorded_by", "created_by", "user_id"]))
+    };
+}
+
+async function loadLedger() {
+    let res = await db.from("stock_transactions").select("*").order("created_at", { ascending: false }).limit(1000);
+    if (res.error) res = await db.from("stock_transactions").select("*").limit(1000); // no created_at column
+
+    const table = $("ledgerTable");
+    if (!table) return;
+
+    if (res.error) {
+        console.error("Stock ledger error:", res.error);
+        table.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-symbol"><i class="fa-solid fa-triangle-exclamation"></i></div><strong>Stock ledger could not be loaded</strong><span>${escapeHTML(res.error.message)}</span></div></td></tr>`;
+        return;
+    }
+
+    ledgerRows = res.data || [];
+    fillLedgerChemicalFilter();
+    renderLedger();
+}
+
+function fillLedgerChemicalFilter() {
+    const select = $("ledgerChemical");
+    if (!select) return;
+    const previous = select.value;
+    select.innerHTML = '<option value="">All chemicals</option>' +
+        allChemicals.map(c => `<option value="${escapeHTML(c.id)}">${escapeHTML(c.chemical_code)} - ${escapeHTML(c.chemical_name)}</option>`).join("");
+    if (previous) select.value = previous;
+}
+
+function filteredLedger() {
+    const search = ($("ledgerSearch")?.value || "").toLowerCase();
+    const chem = $("ledgerChemical")?.value || "";
+    return ledgerRows.map(ledgerView).filter(v =>
+        (!chem || String(v.chemicalId) === chem) &&
+        `${v.code} ${v.name} ${v.type} ${v.note}`.toLowerCase().includes(search)
+    );
+}
+
+function renderLedger() {
+    const table = $("ledgerTable");
+    if (!table) return;
+    const rows = filteredLedger();
+
+    table.innerHTML = rows.length ? rows.map(v => `
+        <tr>
+            <td>${formatDate(v.date)}</td>
+            <td><div class="chemical-cell"><strong>${escapeHTML(v.name)}</strong><small>${escapeHTML(v.code)}</small></div></td>
+            <td>${escapeHTML(v.type)}</td>
+            <td>${v.qty === null ? "-" : `<span class="${v.qty >= 0 ? "qty-in" : "qty-out"}">${v.qty > 0 ? "+" : ""}${v.qty.toFixed(2)} ${escapeHTML(v.unit)}</span>`}</td>
+            <td>${v.balance === null ? "-" : Number(v.balance).toFixed(2)}</td>
+            <td>${escapeHTML(v.note || "-")}</td>
+            <td>${escapeHTML(v.by)}</td>
+        </tr>`).join("") : `
+        <tr><td colspan="7"><div class="empty-state"><div class="empty-symbol"><i class="fa-solid fa-clipboard-list"></i></div>
+        <strong>No stock movements yet</strong><span>Stock changes will be listed here.</span></div></td></tr>`;
+}
+
+$("ledgerSearch")?.addEventListener("input", renderLedger);
+$("ledgerChemical")?.addEventListener("change", renderLedger);
+
+function exportLedgerCSV() {
+    csvDownload("Stock_Ledger.csv",
+        ["Date", "Chemical ID", "Chemical", "Type", "Quantity", "Unit", "Balance", "Note", "By"],
+        filteredLedger().map(v => [v.date, v.code, v.name, v.type, v.qty, v.unit, v.balance, v.note, v.by]));
+}
+
+async function refreshAll() {
+    try {
+        await loadChemicals();
+        await loadConsumption();
+        await loadLedger();
+        toast("Data refreshed.", "success");
+    } catch (e) {
+        toast("Refresh failed. " + e.message, "error");
+    }
+}
+
 /* ---------------- REPORTS ---------------- */
 
 function updateReports() {
@@ -875,12 +1013,13 @@ function setLive(state) {
     liveOn = state === "on";
     pill.className = "live-pill " + state;
     pill.querySelector("span").innerText = state === "on" ? "Live" : state === "off" ? "Offline" : "Connecting…";
+    const sl = $("setLive"); if (sl) sl.innerText = liveOn ? "Connected" : "Not connected";
 }
 
 function scheduleRefresh() {
     clearTimeout(refreshTimer);
     refreshTimer = setTimeout(async () => {
-        try { await loadChemicals(); await loadConsumption(); }
+        try { await loadChemicals(); await loadConsumption(); await loadLedger(); }
         catch (e) { console.error("Live refresh failed:", e); }
     }, 400);
 }
@@ -892,6 +1031,7 @@ function startRealtime() {
     liveChannel = db.channel("rkcms-live")
         .on("postgres_changes", { event: "*", schema: "public", table: "chemicals" }, scheduleRefresh)
         .on("postgres_changes", { event: "*", schema: "public", table: "consumption_logs" }, scheduleRefresh)
+        .on("postgres_changes", { event: "*", schema: "public", table: "stock_transactions" }, scheduleRefresh)
         .subscribe(status => {
             if (status === "SUBSCRIBED") setLive("on");
             else if (["CHANNEL_ERROR", "TIMED_OUT", "CLOSED"].includes(status)) setLive("off");
@@ -967,6 +1107,7 @@ async function startApp() {
         await loadProfile();
         await loadChemicals();
         await loadConsumption();
+        loadLedger().catch(console.error);
 
         $("loginPage")?.classList.add("hidden");
         $("appShell")?.classList.remove("hidden");
@@ -992,7 +1133,20 @@ document.addEventListener("keydown", e => { if (e.key === "Escape") closeChemica
 /* Inline onclick handlers need these on window. */
 Object.assign(window, {
     viewChemical, editChemical, deleteChemical, confirmDeleteChemical, restoreChemical,
-    viewSds, removeSdsFile, closeChemicalModal, exportCSV, exportConsumptionCSV
+    viewSds, removeSdsFile, closeChemicalModal, exportCSV, exportConsumptionCSV, exportLedgerCSV, refreshAll
+});
+
+/* ---------------- MOBILE TABLE LABELS ----------------
+   On phones, tables turn into cards; each cell shows its column name. */
+document.querySelectorAll("table.stack").forEach(table => {
+    const heads = [...table.querySelectorAll("thead th")].map(th => th.innerText.trim());
+    const body = table.querySelector("tbody");
+    if (!body) return;
+    const label = () => body.querySelectorAll("tr").forEach(tr =>
+        [...tr.children].forEach((td, i) => { if (!td.hasAttribute("colspan")) td.setAttribute("data-label", heads[i] || ""); })
+    );
+    new MutationObserver(label).observe(body, { childList: true });
+    label();
 });
 
 /* ---------------- INIT ---------------- */
